@@ -24,7 +24,7 @@ public sealed class MetricCard : Control
         Label = label;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         BackColor = Color.FromArgb(0x14, 0x16, 0x1F);
-        Size = new Size(190, 108);
+        Size = new Size(168, 94);
     }
 
     public void SetValue(string value, string unit)
@@ -52,23 +52,23 @@ public sealed class MetricCard : Control
         g.FillPath(bgBrush, path);
         g.DrawPath(borderPen, path);
 
-        var iconRect = new RectangleF(16, 16, 30, 30);
+        var iconRect = new RectangleF(14, 13, 26, 26);
         _icon(g, iconRect, _accent);
 
-        using var valueFont = new Font("Segoe UI", 17f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var unitFont = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel);
-        using var labelFont = new Font("Segoe UI", 10.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var valueFont = new Font("Segoe UI", 15f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var unitFont = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var labelFont = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Pixel);
         using var valueBrush = new SolidBrush(TextPrimary);
         using var mutedBrush = new SolidBrush(TextMuted);
 
         var valueSize = g.MeasureString(_value, valueFont);
-        float textX = 16, textY = 58;
+        float textX = 14, textY = 50;
         g.DrawString(_value, valueFont, valueBrush, textX, textY);
         if (!string.IsNullOrEmpty(_unit))
         {
-            g.DrawString(_unit, unitFont, mutedBrush, textX + valueSize.Width + 2, textY + 5);
+            g.DrawString(_unit, unitFont, mutedBrush, textX + valueSize.Width + 2, textY + 4);
         }
-        g.DrawString(Label, labelFont, mutedBrush, textX, textY + 26);
+        g.DrawString(Label, labelFont, mutedBrush, textX, textY + 23);
     }
 
     private static GraphicsPath RoundedRect(RectangleF r, float radius)

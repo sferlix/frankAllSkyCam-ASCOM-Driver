@@ -19,7 +19,7 @@ public sealed class NightCard : Control
         _accent = accent;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         BackColor = Color.FromArgb(0x14, 0x16, 0x1F);
-        Size = new Size(190, 108);
+        Size = new Size(168, 94);
     }
 
     public void SetWindow(string start, string end)
@@ -47,19 +47,19 @@ public sealed class NightCard : Control
         g.FillPath(bgBrush, path);
         g.DrawPath(borderPen, path);
 
-        var iconRect = new RectangleF(16, 16, 30, 30);
+        var iconRect = new RectangleF(14, 13, 26, 26);
         WeatherIcons.Moon(g, iconRect, _accent);
 
-        using var valueFont = new Font("Segoe UI", 13.5f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var captionFont = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var valueFont = new Font("Segoe UI", 12f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var captionFont = new Font("Segoe UI", 8.5f, FontStyle.Regular, GraphicsUnit.Pixel);
         using var valueBrush = new SolidBrush(TextPrimary);
         using var mutedBrush = new SolidBrush(TextMuted);
 
-        const float textX = 16;
-        g.DrawString("INIZIO NOTTE", captionFont, mutedBrush, textX, 46);
-        g.DrawString(_start, valueFont, valueBrush, textX, 56);
-        g.DrawString("FINE NOTTE", captionFont, mutedBrush, textX, 78);
-        g.DrawString(_end, valueFont, valueBrush, textX, 88);
+        const float textX = 14;
+        g.DrawString("INIZIO NOTTE", captionFont, mutedBrush, textX, 40);
+        g.DrawString(_start, valueFont, valueBrush, textX, 49);
+        g.DrawString("FINE NOTTE", captionFont, mutedBrush, textX, 65);
+        g.DrawString(_end, valueFont, valueBrush, textX, 74);
     }
 
     private static GraphicsPath RoundedRect(RectangleF r, float radius)

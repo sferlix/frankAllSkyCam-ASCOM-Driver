@@ -29,7 +29,7 @@ public sealed class CompassCard : Control
         Label = label;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw, true);
         BackColor = Color.FromArgb(0x14, 0x16, 0x1F);
-        Size = new Size(190, 108);
+        Size = new Size(168, 94);
     }
 
     /// <summary>Updates both the compass needle (<paramref name="degrees"/>) and the wind-speed readout
@@ -68,8 +68,8 @@ public sealed class CompassCard : Control
             g.DrawPath(borderPen, path);
         }
 
-        float dialCx = 52, dialCy = Height / 2f;
-        float dialR = 38f;
+        float dialCx = 42, dialCy = Height / 2f;
+        float dialR = 30f;
 
         using (var ringPen = new Pen(RingColor, 1.6f))
         {
@@ -80,8 +80,8 @@ public sealed class CompassCard : Control
             g.DrawEllipse(innerRingPen, dialCx - dialR * 0.68f, dialCy - dialR * 0.68f, dialR * 1.36f, dialR * 1.36f);
         }
 
-        using var mainFont = new Font("Segoe UI", 8.3f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var minorFont = new Font("Segoe UI", 6.6f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var mainFont = new Font("Segoe UI", 7.2f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var minorFont = new Font("Segoe UI", 5.8f, FontStyle.Regular, GraphicsUnit.Pixel);
         using var labelBrush = new SolidBrush(TextMuted);
         using var mainLabelBrush = new SolidBrush(TextPrimary);
 
@@ -89,7 +89,7 @@ public sealed class CompassCard : Control
         {
             double a = i * Math.PI / 4 - Math.PI / 2;
             bool isMain = i % 2 == 0;
-            float labelR = dialR + (isMain ? 11f : 9f);
+            float labelR = dialR + (isMain ? 9f : 7f);
             var name = CardinalNames[i];
             var font = isMain ? mainFont : minorFont;
             var brush = isMain ? mainLabelBrush : labelBrush;
@@ -104,21 +104,21 @@ public sealed class CompassCard : Control
             g.DrawLine(tickPen, t1, t2);
         }
 
-        float textX = 104;
-        using var speedValueFont = new Font("Segoe UI", 17f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var speedUnitFont = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel);
-        using var degreesFont = new Font("Segoe UI", 10.5f, FontStyle.Regular, GraphicsUnit.Pixel);
-        using var cardinalFont = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var smallLabelFont = new Font("Segoe UI", 10.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        float textX = 96;
+        using var speedValueFont = new Font("Segoe UI", 15f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var speedUnitFont = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var degreesFont = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var cardinalFont = new Font("Segoe UI", 9f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var smallLabelFont = new Font("Segoe UI", 9f, FontStyle.Regular, GraphicsUnit.Pixel);
         using var accentBrush = new SolidBrush(_accent);
 
         // Wind speed is the headline value (matches the other cards' style); direction is the
         // supporting detail, shown smaller underneath as "184° S" per the user's request.
         var speedSize = g.MeasureString(_speedValue, speedValueFont);
-        g.DrawString(_speedValue, speedValueFont, mainLabelBrush, textX, 26);
+        g.DrawString(_speedValue, speedValueFont, mainLabelBrush, textX, 21);
         if (!string.IsNullOrEmpty(_speedUnit))
         {
-            g.DrawString(_speedUnit, speedUnitFont, labelBrush, textX + speedSize.Width + 1, 31);
+            g.DrawString(_speedUnit, speedUnitFont, labelBrush, textX + speedSize.Width + 1, 25);
         }
 
         if (_degrees is { } degrees)
@@ -138,11 +138,11 @@ public sealed class CompassCard : Control
 
             string degreesStr = $"{degrees:0}°";
             var degreesSize = g.MeasureString(degreesStr, degreesFont);
-            g.DrawString(degreesStr, degreesFont, labelBrush, textX, 52);
-            g.DrawString(ToCardinal(degrees), cardinalFont, accentBrush, textX + degreesSize.Width + 4, 52);
+            g.DrawString(degreesStr, degreesFont, labelBrush, textX, 42);
+            g.DrawString(ToCardinal(degrees), cardinalFont, accentBrush, textX + degreesSize.Width + 4, 42);
         }
 
-        g.DrawString(Label, smallLabelFont, labelBrush, textX, 80);
+        g.DrawString(Label, smallLabelFont, labelBrush, textX, 66);
     }
 
     private static GraphicsPath RoundedRect(RectangleF r, float radius)
