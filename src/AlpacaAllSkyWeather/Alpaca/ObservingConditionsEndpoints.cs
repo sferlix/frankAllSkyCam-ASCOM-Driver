@@ -42,6 +42,9 @@ public static class ObservingConditionsEndpoints
 
         app.MapGet($"{BaseRoute}/sensordescription", (HttpRequest r, ObservingConditionsDevice d) =>
             AlpacaEndpointHelpers.HandleStringAsync(r, () => d.SensorDescription(r.Query["SensorName"].ToString())));
+
+        app.MapPut($"{BaseRoute}/refresh", (HttpRequest r, ObservingConditionsDevice d) =>
+            AlpacaEndpointHelpers.HandleMethodAsync(r, d.Refresh));
     }
 
     private static void MapDouble(WebApplication app, string route, Func<ObservingConditionsDevice, double> selector)

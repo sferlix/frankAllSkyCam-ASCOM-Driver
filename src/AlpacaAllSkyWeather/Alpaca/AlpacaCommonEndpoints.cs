@@ -8,11 +8,22 @@ public static class AlpacaCommonEndpoints
 
     public static void MapAlpacaCommonEndpoints(this WebApplication app)
     {
-        app.MapGet($"{BaseRoute}/connected", (HttpRequest r) =>
-            AlpacaEndpointHelpers.HandleBoolAsync(r, () => true));
+        app.MapGet($"{BaseRoute}/connected", (HttpRequest r, ObservingConditionsDevice device) =>
+            AlpacaEndpointHelpers.HandleBoolAsync(r, () => device.Connected));
 
-        app.MapPut($"{BaseRoute}/connected", (HttpRequest r) =>
-            AlpacaEndpointHelpers.HandleMethodAsync(r, () => { /* always connected; nothing to change */ }));
+        app.MapPut($"{BaseRoute}/connected", async (HttpRequest r, ObservingConditionsDevice device) =>
+        {
+            var form = await r.ReadFormAsync();
+            var raw = form["Connected"].ToString();
+            return await AlpacaEndpointHelpers.HandleMethodAsync(r, () =>
+            {
+                if (!bool.TryParse(raw, out var value))
+                {
+                    throw new AlpacaDeviceException(AlpacaErrors.InvalidValue, $"'{raw}' is not a valid Connected value.");
+                }
+                device.Connected = value;
+            });
+        });
 
         app.MapGet($"{BaseRoute}/description", (HttpRequest r) =>
             AlpacaEndpointHelpers.HandleStringAsync(r, () =>
@@ -24,8 +35,11 @@ public static class AlpacaCommonEndpoints
         app.MapGet($"{BaseRoute}/driverversion", (HttpRequest r) =>
             AlpacaEndpointHelpers.HandleStringAsync(r, () => "1.0"));
 
+        // Declares 1, not 2: this driver implements the IObservingConditions (v1) surface only.
+        // V2 (IAscomDeviceV2) adds Connect/Disconnect/Connecting/DeviceState for async connection
+        // handling, which is out of scope for a device that is always synchronously "connected".
         app.MapGet($"{BaseRoute}/interfaceversion", (HttpRequest r) =>
-            AlpacaEndpointHelpers.HandleIntAsync(r, () => 2));
+            AlpacaEndpointHelpers.HandleIntAsync(r, () => 1));
 
         app.MapGet($"{BaseRoute}/name", (HttpRequest r, ObservingConditionsDeviceName deviceName) =>
             AlpacaEndpointHelpers.HandleStringAsync(r, () => deviceName.Value));

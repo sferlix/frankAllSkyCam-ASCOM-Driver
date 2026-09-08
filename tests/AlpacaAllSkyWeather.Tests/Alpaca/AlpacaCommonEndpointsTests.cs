@@ -38,6 +38,31 @@ public class AlpacaCommonEndpointsTests : IClassFixture<WebApplicationFactory<Pr
     }
 
     [Fact]
+    public async Task Connected_put_false_then_get_reflects_the_new_value()
+    {
+        var client = _factory.CreateClient();
+        try
+        {
+            var putResponse = await client.PutAsync(
+                "/api/v1/observingconditions/0/connected",
+                new FormUrlEncodedContent(new Dictionary<string, string> { ["Connected"] = "false" }));
+            putResponse.EnsureSuccessStatusCode();
+
+            var body = await client.GetFromJsonAsync<ConnectedBody>("/api/v1/observingconditions/0/connected");
+            Assert.NotNull(body);
+            Assert.False(body!.Value);
+        }
+        finally
+        {
+            // ObservingConditionsDevice is a singleton shared across every test in this class
+            // (IClassFixture): restore the default so later tests aren't affected by this one.
+            await client.PutAsync(
+                "/api/v1/observingconditions/0/connected",
+                new FormUrlEncodedContent(new Dictionary<string, string> { ["Connected"] = "true" }));
+        }
+    }
+
+    [Fact]
     public async Task Connected_json_uses_exact_PascalCase_property_names_required_by_Alpaca()
     {
         // Minimal API JSON defaults to camelCase; Alpaca requires exact PascalCase.

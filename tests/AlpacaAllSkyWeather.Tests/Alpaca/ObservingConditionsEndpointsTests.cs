@@ -102,4 +102,29 @@ public class ObservingConditionsEndpointsTests : IClassFixture<WebApplicationFac
         Assert.NotNull(body);
         Assert.False(string.IsNullOrWhiteSpace(body!.Value));
     }
+
+    [Fact]
+    public async Task Refresh_succeeds_with_no_error()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.PutAsync(
+            "/api/v1/observingconditions/0/refresh",
+            new FormUrlEncodedContent(new Dictionary<string, string>()));
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task TimeSinceLastUpdate_skytemperature_returns_NotImplemented_error()
+    {
+        SeedState();
+        var client = _factory.CreateClient();
+
+        var body = await client.GetFromJsonAsync<DoubleBody>(
+            "/api/v1/observingconditions/0/timesincelastupdate?SensorName=SkyTemperature");
+
+        Assert.NotNull(body);
+        Assert.Equal(0x400, body!.ErrorNumber); // NotImplemented
+    }
 }

@@ -100,6 +100,57 @@ public class ObservingConditionsDeviceTests
     }
 
     [Fact]
+    public void TimeSinceLastUpdate_with_empty_sensorName_reports_the_overall_latest_age()
+    {
+        var state = new WeatherState();
+        state.Update(SampleDto(), DateTimeOffset.UtcNow.AddMinutes(-5));
+        var device = new ObservingConditionsDevice(state);
+
+        var age = device.TimeSinceLastUpdate("");
+
+        Assert.InRange(age, 295, 310);
+    }
+
+    [Fact]
+    public void TimeSinceLastUpdate_throws_NotImplemented_for_unsupported_sensors()
+    {
+        // The ASCOM spec requires value, description and time-since-last-update to be either
+        // all implemented or all not implemented for a given sensor (Consistency check).
+        var state = new WeatherState();
+        state.Update(SampleDto(), DateTimeOffset.UtcNow);
+        var device = new ObservingConditionsDevice(state);
+
+        var ex1 = Assert.Throws<AlpacaDeviceException>(() => device.TimeSinceLastUpdate("SkyTemperature"));
+        Assert.Equal(AlpacaErrors.NotImplemented, ex1.ErrorNumber);
+
+        var ex2 = Assert.Throws<AlpacaDeviceException>(() => device.TimeSinceLastUpdate("StarFWHM"));
+        Assert.Equal(AlpacaErrors.NotImplemented, ex2.ErrorNumber);
+    }
+
+    [Fact]
+    public void TimeSinceLastUpdate_throws_InvalidValue_for_an_unknown_sensor_name()
+    {
+        var state = new WeatherState();
+        state.Update(SampleDto(), DateTimeOffset.UtcNow);
+        var device = new ObservingConditionsDevice(state);
+
+        var ex = Assert.Throws<AlpacaDeviceException>(() => device.TimeSinceLastUpdate("NotASensor"));
+        Assert.Equal(AlpacaErrors.InvalidValue, ex.ErrorNumber);
+    }
+
+    [Fact]
+    public void Connected_defaults_to_true_and_is_settable()
+    {
+        var device = new ObservingConditionsDevice(new WeatherState());
+
+        Assert.True(device.Connected);
+
+        device.Connected = false;
+
+        Assert.False(device.Connected);
+    }
+
+    [Fact]
     public void SensorDescription_returns_text_for_known_sensors_and_errors_for_others()
     {
         var state = new WeatherState();

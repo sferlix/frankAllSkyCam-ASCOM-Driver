@@ -25,6 +25,8 @@ public sealed class ObservingConditionsDevice
         _state = state;
     }
 
+    public bool Connected { get; set; } = true;
+
     public double AveragePeriod
     {
         get => _averagePeriod;
@@ -58,6 +60,22 @@ public sealed class ObservingConditionsDevice
 
     public double TimeSinceLastUpdate(string sensorName)
     {
+        // Per the ASCOM spec, a sensor's value/description/time-since-last-update must be
+        // either all implemented or all not implemented. An empty name asks for the age of
+        // the most recent update across any sensor, which is always implemented.
+        if (!string.IsNullOrEmpty(sensorName))
+        {
+            if (UnsupportedSensors.Contains(sensorName))
+            {
+                throw NotImplemented(sensorName);
+            }
+
+            if (!KnownSensors.Contains(sensorName))
+            {
+                throw new AlpacaDeviceException(AlpacaErrors.InvalidValue, $"Unknown sensor name '{sensorName}'.");
+            }
+        }
+
         var snapshot = GetSnapshotOrThrow();
         return (DateTimeOffset.UtcNow - snapshot.PolledAtUtc).TotalSeconds;
     }
