@@ -10,7 +10,7 @@ public sealed class MetricCard : Control
     private static readonly Color TextPrimary = Color.FromArgb(0xF5, 0xF6, 0xFA);
     private static readonly Color TextMuted = Color.FromArgb(0x8A, 0x8F, 0xA3);
 
-    private readonly WeatherIcons.Drawer _icon;
+    private WeatherIcons.Drawer _icon;
     private readonly Color _accent;
     private string _value = "—";
     private string _unit = "";
@@ -36,6 +36,19 @@ public sealed class MetricCard : Control
 
         _value = value;
         _unit = unit;
+        Invalidate();
+    }
+
+    /// <summary>Swaps the icon at runtime (e.g. cloud cover switching between cloud/sun/stars
+    /// depending on the current value and day/night).</summary>
+    public void SetIcon(WeatherIcons.Drawer icon)
+    {
+        if (_icon == icon)
+        {
+            return;
+        }
+
+        _icon = icon;
         Invalidate();
     }
 

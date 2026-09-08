@@ -196,6 +196,22 @@ public sealed class StatusForm : Form
 
     /// <summary>Places the window near the system tray (bottom-right of the working area), since
     /// it's opened from the tray icon and WinForms has no direct API for the icon's own position.</summary>
+    /// <summary>Picks the cloud-cover card's icon to match what's actually happening outside:
+    /// clouds when mostly covered, otherwise sun by day or stars by night (same day/night window
+    /// used by the "outside night window" safety rule).</summary>
+    internal static WeatherIcons.Drawer CloudCoverIcon(WeatherSnapshot snapshot)
+    {
+        const double CloudyThresholdPercent = 50;
+        if (snapshot.CloudCover >= CloudyThresholdPercent)
+        {
+            return WeatherIcons.Cloud;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var isNight = now >= snapshot.NightStart && now <= snapshot.NightEnd;
+        return isNight ? WeatherIcons.FiveStar : WeatherIcons.Sun;
+    }
+
     private void PositionNearTray()
     {
         var workingArea = Screen.FromControl(this).WorkingArea;
@@ -233,6 +249,7 @@ public sealed class StatusForm : Form
         _dewPoint.SetValue(snapshot.DewPoint.ToString("0.0", c), "°C");
         _pressure.SetValue(snapshot.Pressure.ToString("0.0", c), "hPa");
         _cloudCover.SetValue(snapshot.CloudCover.ToString("0", c), "%");
+        _cloudCover.SetIcon(CloudCoverIcon(snapshot));
         _skyBrightness.SetValue(snapshot.SkyBrightness.ToString("0", c), "lux");
         _skyQuality.SetValue(snapshot.SkyQuality.ToString("0.0", c), "mag/arcsec²");
         _rainRate.SetValue(snapshot.RainRate.ToString("0.0", c), "mm/h");
