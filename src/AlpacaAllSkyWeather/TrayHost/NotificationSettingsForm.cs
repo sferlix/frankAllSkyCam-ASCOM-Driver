@@ -30,7 +30,7 @@ public sealed class NotificationSettingsForm : Form
         BackColor = Background;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
-        ClientSize = new Size(380, 264);
+        ClientSize = new Size(380, 320);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -93,7 +93,7 @@ public sealed class NotificationSettingsForm : Form
         {
             ForeColor = TextMuted,
             AutoSize = false,
-            Size = new Size(340, 20),
+            Size = new Size(340, 76),
             Location = new Point(20, 236),
         };
 
@@ -139,10 +139,10 @@ public sealed class NotificationSettingsForm : Form
     {
         _statusLabel.ForeColor = TextMuted;
         _statusLabel.Text = "Invio in corso...";
-        var ok = await _notifier.SendAsync(
+        var result = await _notifier.SendAsync(
             _botTokenTextBox.Text.Trim(), _chatIdTextBox.Text.Trim(), "🔭 AllSky Weather: messaggio di prova.");
-        _statusLabel.ForeColor = ok ? StatusOk : StatusError;
-        _statusLabel.Text = ok ? "Messaggio inviato." : "Invio fallito: controlla Token e Chat ID.";
+        _statusLabel.ForeColor = result.Success ? StatusOk : StatusError;
+        _statusLabel.Text = result.Success ? "Messaggio inviato." : $"Invio fallito: {result.ErrorDetail}";
     }
 
     private void Save()
