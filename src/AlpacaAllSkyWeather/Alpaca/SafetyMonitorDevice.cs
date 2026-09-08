@@ -10,12 +10,12 @@ namespace AlpacaAllSkyWeather.Alpaca;
 public sealed class SafetyMonitorDevice
 {
     private readonly WeatherState _state;
-    private readonly SafetyRulesOptions _rules;
+    private readonly IOptionsMonitor<SafetyRulesOptions> _rules;
 
-    public SafetyMonitorDevice(WeatherState state, IOptions<SafetyRulesOptions> rules)
+    public SafetyMonitorDevice(WeatherState state, IOptionsMonitor<SafetyRulesOptions> rules)
     {
         _state = state;
-        _rules = rules.Value;
+        _rules = rules;
     }
 
     public bool Connected { get; set; } = true;
@@ -32,30 +32,31 @@ public sealed class SafetyMonitorDevice
                 return new[] { "nessun dato meteo ricevuto" };
             }
 
+            var rules = _rules.CurrentValue;
             var reasons = new List<string>();
 
             var ageMinutes = (DateTimeOffset.UtcNow - snapshot.PolledAtUtc).TotalMinutes;
-            if (ageMinutes > _rules.MaxDataAgeMinutes)
+            if (ageMinutes > rules.MaxDataAgeMinutes)
             {
                 reasons.Add($"dato meteo vecchio di {ageMinutes:0} minuti");
             }
 
-            if (snapshot.CloudCover > _rules.MaxCloudCoverPercent)
+            if (snapshot.CloudCover > rules.MaxCloudCoverPercent)
             {
                 reasons.Add($"copertura nuvolosa {snapshot.CloudCover:0}%");
             }
 
-            if (snapshot.RainRate > _rules.MaxRainRate)
+            if (snapshot.RainRate > rules.MaxRainRate)
             {
                 reasons.Add("pioggia rilevata");
             }
 
-            if (snapshot.WindGust > _rules.MaxWindGustSpeed)
+            if (snapshot.WindGust > rules.MaxWindGustSpeed)
             {
                 reasons.Add($"raffica di vento {snapshot.WindGust:0} m/s");
             }
 
-            if (snapshot.SkyBrightness > _rules.MaxSkyBrightnessLux)
+            if (snapshot.SkyBrightness > rules.MaxSkyBrightnessLux)
             {
                 reasons.Add($"cielo troppo luminoso ({snapshot.SkyBrightness:0} lux)");
             }

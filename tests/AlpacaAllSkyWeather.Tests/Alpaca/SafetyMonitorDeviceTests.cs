@@ -17,7 +17,23 @@ public class SafetyMonitorDeviceTests
     };
 
     private static SafetyMonitorDevice CreateDevice(WeatherState state, SafetyRulesOptions? rules = null)
-        => new(state, Options.Create(rules ?? DefaultRules));
+        => new(state, new StaticOptionsMonitor<SafetyRulesOptions>(rules ?? DefaultRules));
+
+    /// <summary>Minimal IOptionsMonitor fake: SafetyMonitorDevice uses IOptionsMonitor (not
+    /// IOptions) so appsettings.json edits are picked up live without a restart.</summary>
+    private sealed class StaticOptionsMonitor<T> : IOptionsMonitor<T>
+    {
+        public StaticOptionsMonitor(T value) => CurrentValue = value;
+        public T CurrentValue { get; }
+        public T Get(string? name) => CurrentValue;
+        public IDisposable OnChange(Action<T, string?> listener) => NullDisposable.Instance;
+
+        private sealed class NullDisposable : IDisposable
+        {
+            public static readonly NullDisposable Instance = new();
+            public void Dispose() { }
+        }
+    }
 
     [Fact]
     public void IsSafe_is_false_before_any_poll()
