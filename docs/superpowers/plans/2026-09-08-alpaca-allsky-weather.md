@@ -1915,6 +1915,36 @@ git commit -m "Wire up the final composition root: configurable Kestrel port on 
 
 ### Task 10: WinForms tray host
 
+> **As-built note:** during implementation the user asked for a proper visual
+> design instead of the bare-bones version originally planned here — a custom
+> tray icon and a legible, styled status window. What actually shipped (all
+> under `src/AlpacaAllSkyWeather/TrayHost/`):
+> - `WeatherIcons.cs` — hand-drawn flat vector icons (thermometer, droplet,
+>   cloud, sun, star, gauge, wind) used on the status cards.
+> - `TrayIconFactory.cs` — builds the tray/window icon (cloud + star badge)
+>   as a real multi-resolution `.ico` with PNG-compressed frames (16-256px),
+>   so it keeps true alpha transparency; `Bitmap.GetHicon()` was tried first
+>   and rejected — it produces a hard 1-bit mask with visibly jagged edges.
+> - `MetricCard.cs` — a dark-themed, owner-drawn card (icon + value + unit +
+>   label) reused for the 11 non-directional metrics.
+> - `CompassCard.cs` — a dedicated card for wind direction: an 8-point
+>   cardinal rose (N/NE/E/SE/S/SO/O/NO) with tick marks and a needle overlay
+>   rotated to the live value, added after the user asked for cardinal
+>   points on the compass rather than a plain rotating arrow.
+> - `StatusForm.cs` — hosts a 3x4 grid of those cards plus a header (device
+>   name, a freshness dot, last-poll time), refreshing every 5s from
+>   `WeatherState`.
+> - `TrayApplicationContext.cs` — as originally planned, plus a "Mostra
+>   stato" menu item (and tray icon double-click) that opens/focuses a
+>   singleton `StatusForm`.
+>
+> Visual design was iterated offline first: a throwaway console harness in
+> the scratchpad rendered the same drawing code to PNG files, inspected via
+> the Read tool, before porting the approved look into the project — and a
+> second harness rendered the *actual* `StatusForm`/`TrayIconFactory` classes
+> to confirm the real app matches the mockup. Kept below is the original
+> bounded scope for reference.
+
 **Files:**
 - Create: `src/AlpacaAllSkyWeather/TrayHost/TrayApplicationContext.cs`
 - Modify: `src/AlpacaAllSkyWeather/Program.cs`
