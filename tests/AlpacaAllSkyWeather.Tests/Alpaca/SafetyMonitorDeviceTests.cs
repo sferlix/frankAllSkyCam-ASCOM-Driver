@@ -6,18 +6,25 @@ namespace AlpacaAllSkyWeather.Tests.Alpaca;
 
 public class SafetyMonitorDeviceTests
 {
-    private static readonly SafetyRulesOptions DefaultRules = new();
-
     private static WeatherJsonDto SafeDto() => new()
     {
         CloudCover = 20,
         RainRate = 0,
         WindGust = 5,
+        WindSpeed = 3,
         SkyBrightness = 10,
+        SkyQuality = 21.0,
+        Humidity = 40,
+        Temperature = 15,
+        DewPoint = 5,
+        Pressure = 1013,
+        StarCount = 50,
+        NightStart = DateTimeOffset.UtcNow.AddHours(-1),
+        NightEnd = DateTimeOffset.UtcNow.AddHours(1),
     };
 
     private static SafetyMonitorDevice CreateDevice(WeatherState state, SafetyRulesOptions? rules = null)
-        => new(state, new StaticOptionsMonitor<SafetyRulesOptions>(rules ?? DefaultRules));
+        => new(state, new StaticOptionsMonitor<SafetyRulesOptions>(rules ?? new SafetyRulesOptions()));
 
     /// <summary>Minimal IOptionsMonitor fake: SafetyMonitorDevice uses IOptionsMonitor (not
     /// IOptions) so appsettings.json edits are picked up live without a restart.</summary>
@@ -45,7 +52,7 @@ public class SafetyMonitorDeviceTests
     }
 
     [Fact]
-    public void IsSafe_is_true_when_all_readings_are_within_thresholds()
+    public void IsSafe_is_true_when_all_readings_are_within_thresholds_using_default_rules()
     {
         var state = new WeatherState();
         state.Update(SafeDto(), DateTimeOffset.UtcNow);
@@ -66,47 +73,168 @@ public class SafetyMonitorDeviceTests
     }
 
     [Fact]
-    public void IsSafe_is_false_when_cloud_cover_exceeds_the_threshold()
+    public void Disabled_rules_are_never_evaluated()
     {
+        var rules = new SafetyRulesOptions
+        {
+            CloudCover = new ThresholdRule { Enabled = false, Threshold = 5 }, // would fail if evaluated
+        };
         var state = new WeatherState();
-        state.Update(SafeDto() with { CloudCover = 95 }, DateTimeOffset.UtcNow);
-        var device = CreateDevice(state);
+        state.Update(SafeDto() with { CloudCover = 99 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.True(device.IsSafe);
+    }
+
+    [Theory]
+    [InlineData(nameof(WeatherJsonDto.CloudCover), 95, "nuvol")]
+    [InlineData(nameof(WeatherJsonDto.RainRate), 0.1, "pioggia")]
+    [InlineData(nameof(WeatherJsonDto.WindGust), 20, "raffica")]
+    [InlineData(nameof(WeatherJsonDto.SkyBrightness), 5000, "luminos")]
+    public void Above_threshold_rules_report_unsafe_when_enabled(string field, double value, string expectedReasonSubstring)
+    {
+        var rules = new SafetyRulesOptions();
+        var dto = field switch
+        {
+            nameof(WeatherJsonDto.CloudCover) => SafeDto() with { CloudCover = value },
+            nameof(WeatherJsonDto.RainRate) => SafeDto() with { RainRate = value },
+            nameof(WeatherJsonDto.WindGust) => SafeDto() with { WindGust = value },
+            nameof(WeatherJsonDto.SkyBrightness) => SafeDto() with { SkyBrightness = value },
+            _ => throw new ArgumentException(field),
+        };
+        var state = new WeatherState();
+        state.Update(dto, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("nuvol", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains(expectedReasonSubstring, StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void IsSafe_is_false_when_it_is_raining()
+    public void WindSpeed_rule_reports_unsafe_when_enabled_and_exceeded()
     {
+        var rules = new SafetyRulesOptions { WindSpeed = new ThresholdRule { Enabled = true, Threshold = 10 } };
         var state = new WeatherState();
-        state.Update(SafeDto() with { RainRate = 0.1 }, DateTimeOffset.UtcNow);
-        var device = CreateDevice(state);
+        state.Update(SafeDto() with { WindSpeed = 20 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("pioggia", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("vento", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void IsSafe_is_false_when_wind_gust_exceeds_the_threshold()
+    public void Humidity_rule_reports_unsafe_when_enabled_and_exceeded()
     {
+        var rules = new SafetyRulesOptions { Humidity = new ThresholdRule { Enabled = true, Threshold = 80 } };
         var state = new WeatherState();
-        state.Update(SafeDto() with { WindGust = 20 }, DateTimeOffset.UtcNow);
-        var device = CreateDevice(state);
+        state.Update(SafeDto() with { Humidity = 95 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("raffica", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("umidit", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
-    public void IsSafe_is_false_when_sky_is_too_bright()
+    public void DewPoint_rule_reports_unsafe_when_enabled_and_exceeded()
     {
+        var rules = new SafetyRulesOptions { DewPoint = new ThresholdRule { Enabled = true, Threshold = 15 } };
         var state = new WeatherState();
-        state.Update(SafeDto() with { SkyBrightness = 5000 }, DateTimeOffset.UtcNow);
-        var device = CreateDevice(state);
+        state.Update(SafeDto() with { DewPoint = 18 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("luminos", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("rugiada", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SkyQuality_rule_reports_unsafe_when_enabled_and_below_threshold()
+    {
+        var rules = new SafetyRulesOptions { SkyQuality = new ThresholdRule { Enabled = true, Threshold = 18 } };
+        var state = new WeatherState();
+        state.Update(SafeDto() with { SkyQuality = 5 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.False(device.IsSafe);
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("qualit", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void TemperatureMin_rule_reports_unsafe_when_enabled_and_below_threshold()
+    {
+        var rules = new SafetyRulesOptions { TemperatureMin = new ThresholdRule { Enabled = true, Threshold = 0 } };
+        var state = new WeatherState();
+        state.Update(SafeDto() with { Temperature = -5 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.False(device.IsSafe);
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("temperatura", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void PressureMin_rule_reports_unsafe_when_enabled_and_below_threshold()
+    {
+        var rules = new SafetyRulesOptions { PressureMin = new ThresholdRule { Enabled = true, Threshold = 1000 } };
+        var state = new WeatherState();
+        state.Update(SafeDto() with { Pressure = 980 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.False(device.IsSafe);
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("pressione", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void StarCountMin_rule_reports_unsafe_when_enabled_and_below_threshold()
+    {
+        var rules = new SafetyRulesOptions { StarCountMin = new ThresholdRule { Enabled = true, Threshold = 10 } };
+        var state = new WeatherState();
+        state.Update(SafeDto() with { StarCount = 2 }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.False(device.IsSafe);
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("stelle", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NightWindow_rule_reports_unsafe_when_enabled_and_now_is_outside_the_window()
+    {
+        var rules = new SafetyRulesOptions { NightWindowEnabled = true };
+        var state = new WeatherState();
+        // NightStart/NightEnd both in the past: "now" is after the window (daytime).
+        state.Update(SafeDto() with
+        {
+            NightStart = DateTimeOffset.UtcNow.AddHours(-5),
+            NightEnd = DateTimeOffset.UtcNow.AddHours(-1),
+        }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.False(device.IsSafe);
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("notte", StringComparison.OrdinalIgnoreCase) || r.Contains("notturna", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void NightWindow_rule_is_safe_when_now_is_inside_the_window()
+    {
+        var rules = new SafetyRulesOptions { NightWindowEnabled = true };
+        var state = new WeatherState();
+        state.Update(SafeDto(), DateTimeOffset.UtcNow); // SafeDto: NightStart -1h, NightEnd +1h -> now is inside
+        var device = CreateDevice(state, rules);
+
+        Assert.True(device.IsSafe);
+    }
+
+    [Fact]
+    public void NightWindow_rule_is_ignored_when_disabled_even_outside_the_window()
+    {
+        var rules = new SafetyRulesOptions { NightWindowEnabled = false };
+        var state = new WeatherState();
+        state.Update(SafeDto() with
+        {
+            NightStart = DateTimeOffset.UtcNow.AddHours(-5),
+            NightEnd = DateTimeOffset.UtcNow.AddHours(-1),
+        }, DateTimeOffset.UtcNow);
+        var device = CreateDevice(state, rules);
+
+        Assert.True(device.IsSafe);
     }
 
     [Fact]
