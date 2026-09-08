@@ -19,6 +19,10 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<WeatherPollerService>();
 
+var httpPort = builder.Configuration.GetValue(
+    $"{WeatherPollerOptions.SectionName}:{nameof(WeatherPollerOptions.HttpPort)}", 51111);
+builder.WebHost.UseUrls($"http://127.0.0.1:{httpPort}");
+
 var app = builder.Build();
 
 app.MapAlpacaCommonEndpoints();
