@@ -520,6 +520,7 @@ git commit -m "Add thread-safe WeatherState shared between the poller and the Al
 **Files:**
 - Create: `src/AlpacaAllSkyWeather/Weather/WeatherPollerOptions.cs`
 - Create: `src/AlpacaAllSkyWeather/Weather/WeatherPollerService.cs`
+- Create: `src/AlpacaAllSkyWeather/AssemblyInfo.cs`
 - Test: `tests/AlpacaAllSkyWeather.Tests/Weather/WeatherPollerServiceTests.cs`
 
 **Interfaces:**
@@ -640,6 +641,20 @@ public sealed class WeatherPollerOptions
 
     public string DeviceName { get; set; } = "AllSky Weather";
 }
+```
+
+- [ ] **Step 3b: Make internal members visible to the test assembly**
+
+`WeatherPollerService.PollOnceAsync` is `internal` (Step 4 below) so it isn't part
+of the driver's public surface, but the test project is a separate assembly and
+can't see `internal` members without this:
+
+`src/AlpacaAllSkyWeather/AssemblyInfo.cs`:
+
+```csharp
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("AlpacaAllSkyWeather.Tests")]
 ```
 
 - [ ] **Step 4: Implement `WeatherPollerService`**
