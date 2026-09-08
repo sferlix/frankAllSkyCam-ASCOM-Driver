@@ -3,7 +3,7 @@
 ; script with ISCC.exe (Inno Setup Compiler). See docs/superpowers/plans for the full build steps.
 
 #define MyAppName "frankAllSkyCam ASCOM Driver"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.1.0"
 #define MyAppPublisher "sferlazza"
 #define MyAppExeName "AlpacaAllSkyWeather.exe"
 
@@ -37,7 +37,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "autostart"; Description: "Avvia {#MyAppName} all'avvio di Windows"; GroupDescription: "Attività aggiuntive:"
 
 [Files]
-Source: "..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; appsettings.json is excluded from the bulk copy and installed separately with
+; onlyifdoesntexist: an upgrade must never overwrite the user's saved thresholds and
+; Telegram credentials (entered via the tray Settings UI, written back into this file).
+Source: "..\publish\win-x64\*"; DestDir: "{app}"; Excludes: "appsettings.json"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\publish\win-x64\appsettings.json"; DestDir: "{app}"; Flags: onlyifdoesntexist
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
