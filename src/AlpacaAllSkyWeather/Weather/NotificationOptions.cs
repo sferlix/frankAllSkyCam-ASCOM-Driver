@@ -11,4 +11,8 @@ public sealed class NotificationOptions
     public string TelegramBotToken { get; set; } = "";
 
     public string TelegramChatId { get; set; } = "";
+
+    /// <summary>HTTP(S) address of the AllSkyCam's live image. When set, TelegramCommandListener
+    /// sends a copy of it (in addition to the status screenshot) on "now"/"status".</summary>
+    public string AllSkyCamImageUrl { get; set; } = "";
 }

@@ -19,6 +19,7 @@ public sealed class NotificationSettingsForm : Form
     private readonly CheckBox _enabledCheckBox;
     private readonly TextBox _botTokenTextBox;
     private readonly TextBox _chatIdTextBox;
+    private readonly TextBox _allSkyCamUrlTextBox;
     private readonly Label _statusLabel;
 
     public NotificationSettingsForm(NotificationOptions current, TelegramNotifier notifier, string appSettingsPath)
@@ -30,7 +31,7 @@ public sealed class NotificationSettingsForm : Form
         BackColor = Background;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
-        ClientSize = new Size(380, 320);
+        ClientSize = new Size(380, 380);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -77,13 +78,24 @@ public sealed class NotificationSettingsForm : Form
             Size = new Size(340, 24),
         };
 
+        var allSkyCamUrlLabel = new Label { Text = "URL immagine AllSkyCam", ForeColor = TextMuted, AutoSize = true, Location = new Point(20, 200) };
+        _allSkyCamUrlTextBox = new TextBox
+        {
+            Text = current.AllSkyCamImageUrl,
+            BackColor = FieldBackground,
+            ForeColor = TextPrimary,
+            BorderStyle = BorderStyle.FixedSingle,
+            Location = new Point(20, 220),
+            Size = new Size(340, 24),
+        };
+
         var testButton = new Button
         {
             Text = "Invia messaggio di prova",
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = AccentWind,
-            Location = new Point(20, 200),
+            Location = new Point(20, 252),
             Size = new Size(180, 28),
         };
         testButton.FlatAppearance.BorderColor = AccentWind;
@@ -94,7 +106,7 @@ public sealed class NotificationSettingsForm : Form
             ForeColor = TextMuted,
             AutoSize = false,
             Size = new Size(340, 76),
-            Location = new Point(20, 236),
+            Location = new Point(20, 288),
         };
 
         var saveButton = new Button
@@ -104,7 +116,7 @@ public sealed class NotificationSettingsForm : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = TextPrimary,
-            Location = new Point(184, 200),
+            Location = new Point(184, 252),
             Size = new Size(80, 28),
         };
         saveButton.Click += (_, _) => Save();
@@ -116,7 +128,7 @@ public sealed class NotificationSettingsForm : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = TextMuted,
-            Location = new Point(280, 200),
+            Location = new Point(280, 252),
             Size = new Size(80, 28),
         };
 
@@ -126,6 +138,8 @@ public sealed class NotificationSettingsForm : Form
         Controls.Add(_botTokenTextBox);
         Controls.Add(chatIdLabel);
         Controls.Add(_chatIdTextBox);
+        Controls.Add(allSkyCamUrlLabel);
+        Controls.Add(_allSkyCamUrlTextBox);
         Controls.Add(testButton);
         Controls.Add(_statusLabel);
         Controls.Add(saveButton);
@@ -152,6 +166,7 @@ public sealed class NotificationSettingsForm : Form
             Enabled = _enabledCheckBox.Checked,
             TelegramBotToken = _botTokenTextBox.Text.Trim(),
             TelegramChatId = _chatIdTextBox.Text.Trim(),
+            AllSkyCamImageUrl = _allSkyCamUrlTextBox.Text.Trim(),
         };
         AppSettingsWriter.UpdateNotificationSettings(_appSettingsPath, options);
     }

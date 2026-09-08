@@ -20,6 +20,25 @@ public class TelegramCommandListenerTests
         }
     }
 
+    private sealed class RespondingHandler : HttpMessageHandler
+    {
+        private readonly HttpStatusCode _statusCode;
+        private readonly byte[] _body;
+        private readonly Exception? _throw;
+
+        public RespondingHandler(HttpStatusCode statusCode, byte[]? body = null) { _statusCode = statusCode; _body = body ?? Array.Empty<byte>(); }
+        public RespondingHandler(Exception toThrow) { _statusCode = HttpStatusCode.OK; _body = Array.Empty<byte>(); _throw = toThrow; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (_throw is not null)
+            {
+                throw _throw;
+            }
+            return Task.FromResult(new HttpResponseMessage(_statusCode) { Content = new ByteArrayContent(_body) });
+        }
+    }
+
     private const string ExpectedChatId = "7515059983";
 
     private static string UpdatesJson(string text, string chatId = ExpectedChatId, long updateId = 100) =>
@@ -97,5 +116,53 @@ public class TelegramCommandListenerTests
             NullLogger.Instance, CancellationToken.None);
 
         Assert.Equal(42, newOffset);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_returns_null_without_a_request_when_url_is_blank()
+    {
+        var handler = new RespondingHandler(HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(httpClient, "", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_returns_the_bytes_on_success()
+    {
+        var bytes = new byte[] { 1, 2, 3, 4 };
+        var handler = new RespondingHandler(HttpStatusCode.OK, bytes);
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Equal(bytes, result);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_returns_null_on_http_error()
+    {
+        var handler = new RespondingHandler(HttpStatusCode.NotFound);
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_returns_null_on_network_exception()
+    {
+        var handler = new RespondingHandler(new HttpRequestException("connessione rifiutata"));
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Null(result);
     }
 }

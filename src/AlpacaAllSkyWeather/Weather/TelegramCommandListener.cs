@@ -64,9 +64,49 @@ public sealed class TelegramCommandListener : BackgroundService
     private async Task<TelegramSendResult> ReplyWithStatusAsync(string botToken, string chatId, CancellationToken ct)
     {
         var image = await _renderer.RenderAsync(ct);
-        return image is null
+        var result = image is null
             ? await _notifier.SendAsync(botToken, chatId, "Nessun dato disponibile al momento.", ct)
             : await _notifier.SendPhotoAsync(botToken, chatId, image, caption: null, ct);
+
+        var allSkyCamUrl = _options.CurrentValue.AllSkyCamImageUrl;
+        if (!string.IsNullOrWhiteSpace(allSkyCamUrl))
+        {
+            var camImage = await DownloadImageAsync(_httpClient, allSkyCamUrl, _logger, ct);
+            if (camImage is not null)
+            {
+                await _notifier.SendPhotoAsync(botToken, chatId, camImage, caption: "🌌 AllSkyCam", ct);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Downloads the AllSkyCam's live image so it can be forwarded to Telegram. Returns
+    /// null (never throws) when the URL is blank, the request fails, or the response isn't
+    /// successful — a broken camera feed shouldn't stop the status screenshot from being sent.</summary>
+    internal static async Task<byte[]?> DownloadImageAsync(HttpClient httpClient, string url, ILogger logger, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var response = await httpClient.GetAsync(url, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("Download dell'immagine AllSkyCam fallito: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            return await response.Content.ReadAsByteArrayAsync(ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning(ex, "Errore durante il download dell'immagine AllSkyCam");
+            return null;
+        }
     }
 
     private static async Task DelayIgnoringCancellation(CancellationToken ct)
