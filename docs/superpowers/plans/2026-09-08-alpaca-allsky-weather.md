@@ -2088,6 +2088,31 @@ git commit -m "Add system tray host wrapping the Alpaca HTTP server"
 
 This is the acceptance gate from the spec's Testing section. No code changes are expected unless ConformU or a real client surfaces a protocol bug — if that happens, fix it in the relevant file from Tasks 5-9 and re-run the affected task's tests before re-validating.
 
+> **Result (2026-09-08):** ConformU v4.5.0 run against the real driver (Windows
+> 11, actual internet-backed data from frankAllSkyCam) surfaced 4 real issues
+> across two passes, all fixed in commits `c22664b` (and the port-only
+> false-start before it):
+> - `interfaceversion` claimed `2` but only the v1 (`IObservingConditions`)
+>   surface was implemented — `IAscomDeviceV2`'s `Connect`/`Disconnect`/
+>   `Connecting`/`DeviceState` were missing. Fixed by declaring `1`, which
+>   matches what's actually built (see the Global Constraints/spec's
+>   YAGNI section — async connect handling was never in scope for an
+>   always-on passive bridge).
+> - `PUT .../refresh` was never mapped (`ObservingConditionsDevice.Refresh()`
+>   existed but nothing routed to it) → 404.
+> - `TimeSinceLastUpdate` ignored `sensorName` entirely, so it silently
+>   "succeeded" even for `SkyTemperature`/`StarFWHM`, violating the spec's
+>   requirement that value/description/time-since-update be all implemented
+>   or all not. Now mirrors `SensorDescription`'s validation.
+> - `Connected` GET always returned `true` and PUT was a no-op — fixed with
+>   real mutable per-device state.
+>
+> Final run: **"Congratulations, no errors, warnings or issues found: your
+> driver passes ASCOM validation!!"**, all members within FAST target
+> response times. Real-client verification (N.I.N.A./SharpCap) is deferred:
+> this dev machine doesn't have either installed — do that step when the
+> driver runs on the actual acquisition PC.
+
 - [ ] **Step 1: Install ConformU**
 
 Download the latest **ConformU** (ASCOM Conformance Checker, cross-platform CLI) from the ASCOM Initiative's GitHub releases: https://github.com/ASCOM-Initiative/ConformU/releases — grab the Windows x64 zip, extract it anywhere (e.g. `C:\Tools\ConformU`).
