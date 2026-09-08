@@ -56,12 +56,62 @@ public static class WeatherIcons
     public static void Cloud(Graphics g, RectangleF r, Color c)
     {
         using var brush = new SolidBrush(c);
+        CloudShape(g, brush, r);
+    }
+
+    private static void CloudShape(Graphics g, Brush brush, RectangleF r)
+    {
         float w = r.Width, h = r.Height;
         using var baseRect = RoundedRect(new RectangleF(r.X, r.Y + h * 0.45f, w, h * 0.5f), h * 0.25f);
         g.FillPath(brush, baseRect);
         g.FillEllipse(brush, r.X + w * 0.06f, r.Y + h * 0.28f, w * 0.42f, h * 0.5f);
         g.FillEllipse(brush, r.X + w * 0.34f, r.Y, w * 0.5f, h * 0.62f);
         g.FillEllipse(brush, r.X + w * 0.58f, r.Y + h * 0.22f, w * 0.4f, h * 0.5f);
+    }
+
+    /// <summary>Sun peeking out above a cloud that sits lower-right — rays only drawn on the side
+    /// not covered by the cloud, so the overlap reads correctly even in a single flat color.</summary>
+    public static void PartlyCloudyDay(Graphics g, RectangleF r, Color c)
+    {
+        using var brush = new SolidBrush(c);
+        using var pen = new Pen(c, 1.8f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        float w = r.Width, h = r.Height;
+
+        float sunCx = r.X + w * 0.32f, sunCy = r.Y + h * 0.30f, sunR = w * 0.16f;
+        float rayInner = sunR * 1.4f, rayOuter = sunR * 2.15f;
+        foreach (var a in new[] { -Math.PI / 2, -Math.PI * 3 / 4, -Math.PI / 4, Math.PI })
+        {
+            var p1 = new PointF(sunCx + (float)(Math.Cos(a) * rayInner), sunCy + (float)(Math.Sin(a) * rayInner));
+            var p2 = new PointF(sunCx + (float)(Math.Cos(a) * rayOuter), sunCy + (float)(Math.Sin(a) * rayOuter));
+            g.DrawLine(pen, p1, p2);
+        }
+        g.FillEllipse(brush, sunCx - sunR, sunCy - sunR, sunR * 2, sunR * 2);
+
+        var cloudRect = new RectangleF(r.X + w * 0.10f, r.Y + h * 0.40f, w * 0.90f, h * 0.60f);
+        CloudShape(g, brush, cloudRect);
+    }
+
+    /// <summary>Crescent moon peeking out above a cloud that sits lower-right, same layout as
+    /// <see cref="PartlyCloudyDay"/> but for the night reading.</summary>
+    public static void PartlyCloudyNight(Graphics g, RectangleF r, Color c)
+    {
+        using var brush = new SolidBrush(c);
+        float w = r.Width, h = r.Height;
+
+        var moonRect = new RectangleF(r.X + w * 0.02f, r.Y, w * 0.56f, h * 0.56f);
+        using var full = new GraphicsPath();
+        full.AddEllipse(moonRect);
+        var cutRect = new RectangleF(
+            moonRect.X + moonRect.Width * 0.22f, moonRect.Y - moonRect.Height * 0.08f,
+            moonRect.Width * 0.95f, moonRect.Height * 0.95f);
+        using var cut = new GraphicsPath();
+        cut.AddEllipse(cutRect);
+        using var region = new Region(full);
+        region.Exclude(cut);
+        g.FillRegion(brush, region);
+
+        var cloudRect = new RectangleF(r.X + w * 0.10f, r.Y + h * 0.40f, w * 0.90f, h * 0.60f);
+        CloudShape(g, brush, cloudRect);
     }
 
     public static void Sun(Graphics g, RectangleF r, Color c)

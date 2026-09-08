@@ -197,18 +197,24 @@ public sealed class StatusForm : Form
     /// <summary>Places the window near the system tray (bottom-right of the working area), since
     /// it's opened from the tray icon and WinForms has no direct API for the icon's own position.</summary>
     /// <summary>Picks the cloud-cover card's icon to match what's actually happening outside:
-    /// clouds when mostly covered, otherwise sun by day or stars by night (same day/night window
+    /// overcast, partly cloudy, or clear (sun by day / stars by night — same day/night window
     /// used by the "outside night window" safety rule).</summary>
     internal static WeatherIcons.Drawer CloudCoverIcon(WeatherSnapshot snapshot)
     {
-        const double CloudyThresholdPercent = 50;
-        if (snapshot.CloudCover >= CloudyThresholdPercent)
-        {
-            return WeatherIcons.Cloud;
-        }
+        const double OvercastThresholdPercent = 70;
+        const double PartlyCloudyThresholdPercent = 30;
 
         var now = DateTimeOffset.UtcNow;
         var isNight = now >= snapshot.NightStart && now <= snapshot.NightEnd;
+
+        if (snapshot.CloudCover >= OvercastThresholdPercent)
+        {
+            return WeatherIcons.Cloud;
+        }
+        if (snapshot.CloudCover >= PartlyCloudyThresholdPercent)
+        {
+            return isNight ? WeatherIcons.PartlyCloudyNight : WeatherIcons.PartlyCloudyDay;
+        }
         return isNight ? WeatherIcons.FiveStar : WeatherIcons.Sun;
     }
 
