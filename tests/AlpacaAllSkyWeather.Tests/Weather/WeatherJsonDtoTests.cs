@@ -45,6 +45,8 @@ public class WeatherJsonDtoTests
         Assert.Equal(1.8, dto.WindSpeed);
         Assert.Equal(1.9, dto.WindGust);
         Assert.Equal(0, dto.StarCount);
+        Assert.Equal(new DateTimeOffset(2026, 9, 8, 19, 28, 48, TimeSpan.Zero), dto.NightStart);
+        Assert.Equal(new DateTimeOffset(2026, 9, 9, 3, 12, 24, TimeSpan.Zero), dto.NightEnd);
     }
 
     [Fact]

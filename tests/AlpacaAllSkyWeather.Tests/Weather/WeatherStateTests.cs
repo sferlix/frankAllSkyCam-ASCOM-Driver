@@ -18,6 +18,8 @@ public class WeatherStateTests
         WindSpeed = 1.8,
         WindGust = 1.9,
         StarCount = 0,
+        NightStart = new DateTimeOffset(2026, 9, 8, 19, 28, 48, TimeSpan.Zero),
+        NightEnd = new DateTimeOffset(2026, 9, 9, 3, 12, 24, TimeSpan.Zero),
     };
 
     [Fact]
@@ -40,6 +42,8 @@ public class WeatherStateTests
         Assert.NotNull(snapshot);
         Assert.Equal(21.4, snapshot!.CloudCover);
         Assert.Equal(1.8, snapshot.WindSpeed);
+        Assert.Equal(new DateTimeOffset(2026, 9, 8, 19, 28, 48, TimeSpan.Zero), snapshot.NightStart);
+        Assert.Equal(new DateTimeOffset(2026, 9, 9, 3, 12, 24, TimeSpan.Zero), snapshot.NightEnd);
         Assert.Equal(polledAt, snapshot.PolledAtUtc);
     }
 

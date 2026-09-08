@@ -46,6 +46,12 @@ public sealed record WeatherJsonDto
     [JsonPropertyName("StarCount")]
     public double StarCount { get; init; }
 
+    [JsonPropertyName("NightStart")]
+    public DateTimeOffset NightStart { get; init; }
+
+    [JsonPropertyName("NightEnd")]
+    public DateTimeOffset NightEnd { get; init; }
+
     public static WeatherJsonDto Parse(string json)
         => JsonSerializer.Deserialize<WeatherJsonDto>(json, Options)
            ?? throw new JsonException("weather.json deserialized to null");

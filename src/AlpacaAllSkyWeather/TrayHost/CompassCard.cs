@@ -17,6 +17,8 @@ public sealed class CompassCard : Control
     private readonly Color _accent;
     private readonly Color _needleColor;
     private float? _degrees;
+    private string _speedValue = "—";
+    private string _speedUnit = "";
 
     public string Label { get; }
 
@@ -30,14 +32,18 @@ public sealed class CompassCard : Control
         Size = new Size(190, 108);
     }
 
-    public void SetDirection(float? degrees)
+    /// <summary>Updates both the compass needle (<paramref name="degrees"/>) and the wind-speed readout
+    /// shown alongside it — direction and speed share this one card.</summary>
+    public void SetWind(float? degrees, string speedValue, string speedUnit)
     {
-        if (_degrees == degrees)
+        if (_degrees == degrees && _speedValue == speedValue && _speedUnit == speedUnit)
         {
             return;
         }
 
         _degrees = degrees;
+        _speedValue = speedValue;
+        _speedUnit = speedUnit;
         Invalidate();
     }
 
@@ -99,11 +105,21 @@ public sealed class CompassCard : Control
         }
 
         float textX = 104;
-        using var valueFont = new Font("Segoe UI", 17f, FontStyle.Bold, GraphicsUnit.Pixel);
-        using var unitFont = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel);
-        using var cardinalFont = new Font("Segoe UI", 12f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var speedValueFont = new Font("Segoe UI", 17f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var speedUnitFont = new Font("Segoe UI", 11f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var degreesFont = new Font("Segoe UI", 10.5f, FontStyle.Regular, GraphicsUnit.Pixel);
+        using var cardinalFont = new Font("Segoe UI", 10.5f, FontStyle.Bold, GraphicsUnit.Pixel);
         using var smallLabelFont = new Font("Segoe UI", 10.5f, FontStyle.Regular, GraphicsUnit.Pixel);
         using var accentBrush = new SolidBrush(_accent);
+
+        // Wind speed is the headline value (matches the other cards' style); direction is the
+        // supporting detail, shown smaller underneath as "184° S" per the user's request.
+        var speedSize = g.MeasureString(_speedValue, speedValueFont);
+        g.DrawString(_speedValue, speedValueFont, mainLabelBrush, textX, 26);
+        if (!string.IsNullOrEmpty(_speedUnit))
+        {
+            g.DrawString(_speedUnit, speedUnitFont, labelBrush, textX + speedSize.Width + 1, 31);
+        }
 
         if (_degrees is { } degrees)
         {
@@ -120,15 +136,10 @@ public sealed class CompassCard : Control
             using var hubBrush = new SolidBrush(CardBackground);
             g.FillEllipse(hubBrush, dialCx - 2.5f, dialCy - 2.5f, 5, 5);
 
-            string valueStr = degrees.ToString("0");
-            var valueSize = g.MeasureString(valueStr, valueFont);
-            g.DrawString(valueStr, valueFont, mainLabelBrush, textX, 30);
-            g.DrawString("°", unitFont, labelBrush, textX + valueSize.Width + 1, 35);
-            g.DrawString(ToCardinal(degrees), cardinalFont, accentBrush, textX, 54);
-        }
-        else
-        {
-            g.DrawString("—", valueFont, mainLabelBrush, textX, 30);
+            string degreesStr = $"{degrees:0}°";
+            var degreesSize = g.MeasureString(degreesStr, degreesFont);
+            g.DrawString(degreesStr, degreesFont, labelBrush, textX, 52);
+            g.DrawString(ToCardinal(degrees), cardinalFont, accentBrush, textX + degreesSize.Width + 4, 52);
         }
 
         g.DrawString(Label, smallLabelFont, labelBrush, textX, 80);

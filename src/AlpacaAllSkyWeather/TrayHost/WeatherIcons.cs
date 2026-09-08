@@ -132,4 +132,17 @@ public static class WeatherIcons
         Wave(h * 0.55f, 0.12f, w * 0.1f, w);
         Wave(h * 0.82f, 0.12f, 0, w * 0.7f);
     }
+
+    public static void Moon(Graphics g, RectangleF r, Color c)
+    {
+        using var full = new GraphicsPath();
+        full.AddEllipse(r);
+        var cutRect = new RectangleF(r.X + r.Width * 0.32f, r.Y - r.Height * 0.06f, r.Width * 0.92f, r.Height * 0.92f);
+        using var cut = new GraphicsPath();
+        cut.AddEllipse(cutRect);
+        using var region = new Region(full);
+        region.Exclude(cut);
+        using var brush = new SolidBrush(c);
+        g.FillRegion(brush, region);
+    }
 }

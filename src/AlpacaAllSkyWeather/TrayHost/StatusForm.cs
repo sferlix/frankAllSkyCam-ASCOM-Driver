@@ -38,10 +38,10 @@ public sealed class StatusForm : Form
     private readonly MetricCard _skyBrightness;
     private readonly MetricCard _skyQuality;
     private readonly MetricCard _rainRate;
-    private readonly MetricCard _windSpeed;
     private readonly MetricCard _windGust;
-    private readonly CompassCard _windDirection;
+    private readonly CompassCard _wind;
     private readonly MetricCard _starCount;
+    private readonly NightCard _night;
 
     public StatusForm(WeatherState state)
     {
@@ -106,10 +106,10 @@ public sealed class StatusForm : Form
         _skyBrightness = new MetricCard(WeatherIcons.Sun, AccentSky, "Luminosita cielo") { Margin = new Padding(7), Dock = DockStyle.Fill };
         _skyQuality = new MetricCard(WeatherIcons.Star, AccentSky, "Qualita cielo") { Margin = new Padding(7), Dock = DockStyle.Fill };
         _rainRate = new MetricCard(WeatherIcons.DropletWithRain, AccentRain, "Pioggia") { Margin = new Padding(7), Dock = DockStyle.Fill };
-        _windSpeed = new MetricCard(WeatherIcons.Wind, AccentWind, "Vento") { Margin = new Padding(7), Dock = DockStyle.Fill };
         _windGust = new MetricCard(WeatherIcons.Wind, AccentWind, "Raffica") { Margin = new Padding(7), Dock = DockStyle.Fill };
-        _windDirection = new CompassCard(AccentWind, CompassNeedle, "Direzione vento") { Margin = new Padding(7), Dock = DockStyle.Fill };
+        _wind = new CompassCard(AccentWind, CompassNeedle, "Vento") { Margin = new Padding(7), Dock = DockStyle.Fill };
         _starCount = new MetricCard(WeatherIcons.FiveStar, AccentStar, "Stelle rilevate") { Margin = new Padding(7), Dock = DockStyle.Fill };
+        _night = new NightCard(AccentSky) { Margin = new Padding(7), Dock = DockStyle.Fill };
 
         grid.Controls.Add(_temperature, 0, 0);
         grid.Controls.Add(_humidity, 1, 0);
@@ -119,10 +119,10 @@ public sealed class StatusForm : Form
         grid.Controls.Add(_skyBrightness, 2, 1);
         grid.Controls.Add(_skyQuality, 0, 2);
         grid.Controls.Add(_rainRate, 1, 2);
-        grid.Controls.Add(_windSpeed, 2, 2);
-        grid.Controls.Add(_windGust, 0, 3);
-        grid.Controls.Add(_windDirection, 1, 3);
-        grid.Controls.Add(_starCount, 2, 3);
+        grid.Controls.Add(_windGust, 2, 2);
+        grid.Controls.Add(_wind, 0, 3);
+        grid.Controls.Add(_starCount, 1, 3);
+        grid.Controls.Add(_night, 2, 3);
 
         Controls.Add(grid);
         Controls.Add(_headerPanel);
@@ -169,10 +169,12 @@ public sealed class StatusForm : Form
         _skyBrightness.SetValue(snapshot.SkyBrightness.ToString("0", c), "lux");
         _skyQuality.SetValue(snapshot.SkyQuality.ToString("0.0", c), "mag/arcsec²");
         _rainRate.SetValue(snapshot.RainRate.ToString("0.0", c), "mm/h");
-        _windSpeed.SetValue(snapshot.WindSpeed.ToString("0.0", c), "m/s");
         _windGust.SetValue(snapshot.WindGust.ToString("0.0", c), "m/s");
-        _windDirection.SetDirection((float)snapshot.WindDirection);
+        _wind.SetWind((float)snapshot.WindDirection, snapshot.WindSpeed.ToString("0.0", c), "m/s");
         _starCount.SetValue(((int)snapshot.StarCount).ToString(c), "");
+        _night.SetWindow(
+            snapshot.NightStart.ToLocalTime().ToString("HH:mm", c),
+            snapshot.NightEnd.ToLocalTime().ToString("HH:mm", c));
     }
 
     protected override void Dispose(bool disposing)

@@ -13,6 +13,8 @@ public sealed record WeatherSnapshot(
     double WindSpeed,
     double WindGust,
     double StarCount,
+    DateTimeOffset NightStart,
+    DateTimeOffset NightEnd,
     DateTimeOffset PolledAtUtc);
 
 public sealed class WeatherState
@@ -35,6 +37,8 @@ public sealed class WeatherState
             dto.WindSpeed,
             dto.WindGust,
             dto.StarCount,
+            dto.NightStart,
+            dto.NightEnd,
             polledAtUtc);
 
         lock (_lock)
