@@ -12,12 +12,22 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.Configure<WeatherPollerOptions>(
     builder.Configuration.GetSection(WeatherPollerOptions.SectionName));
+builder.Services.Configure<SafetyRulesOptions>(
+    builder.Configuration.GetSection(SafetyRulesOptions.SectionName));
+builder.Services.Configure<NotificationOptions>(
+    builder.Configuration.GetSection(NotificationOptions.SectionName));
+
 builder.Services.AddSingleton<WeatherState>();
 builder.Services.AddSingleton<ObservingConditionsDevice>();
+builder.Services.AddSingleton<SafetyMonitorDevice>();
+builder.Services.AddSingleton<TelegramNotifier>();
 builder.Services.AddSingleton(sp =>
     new ObservingConditionsDeviceName(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<WeatherPollerOptions>>().Value.DeviceName));
+builder.Services.AddSingleton(sp =>
+    new SafetyMonitorDeviceName(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<SafetyRulesOptions>>().Value.DeviceName));
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<WeatherPollerService>();
+builder.Services.AddHostedService<SafetyAlertService>();
 
 var httpPort = builder.Configuration.GetValue(
     $"{WeatherPollerOptions.SectionName}:{nameof(WeatherPollerOptions.HttpPort)}", 51111);
@@ -27,6 +37,7 @@ var app = builder.Build();
 
 app.MapAlpacaCommonEndpoints();
 app.MapObservingConditionsEndpoints();
+app.MapSafetyMonitorEndpoints();
 app.MapManagementEndpoints();
 
 await app.StartAsync();

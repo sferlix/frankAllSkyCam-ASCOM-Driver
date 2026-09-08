@@ -44,15 +44,21 @@ public class ManagementEndpointsTests : IClassFixture<WebApplicationFactory<Prog
     }
 
     [Fact]
-    public async Task ConfiguredDevices_lists_the_single_ObservingConditions_device()
+    public async Task ConfiguredDevices_lists_the_ObservingConditions_and_SafetyMonitor_devices()
     {
         var client = _factory.CreateClient();
 
         var body = await client.GetFromJsonAsync<ConfiguredDevicesBody>("/management/v1/configureddevices");
 
         Assert.NotNull(body);
-        var device = Assert.Single(body!.Value);
-        Assert.Equal("ObservingConditions", device.DeviceType);
-        Assert.Equal(0, device.DeviceNumber);
+        Assert.Equal(2, body!.Value.Count);
+
+        var observingConditions = Assert.Single(body.Value, d => d.DeviceType == "ObservingConditions");
+        Assert.Equal(0, observingConditions.DeviceNumber);
+
+        var safetyMonitor = Assert.Single(body.Value, d => d.DeviceType == "SafetyMonitor");
+        Assert.Equal(0, safetyMonitor.DeviceNumber);
+
+        Assert.NotEqual(observingConditions.UniqueID, safetyMonitor.UniqueID);
     }
 }
