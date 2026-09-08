@@ -22,6 +22,7 @@ builder.Services.AddHostedService<WeatherPollerService>();
 var app = builder.Build();
 
 app.MapAlpacaCommonEndpoints();
+app.MapObservingConditionsEndpoints();
 
 app.Run();
 
