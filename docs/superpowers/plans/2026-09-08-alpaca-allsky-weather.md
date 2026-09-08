@@ -31,6 +31,7 @@
 - Create: `src/AlpacaAllSkyWeather/Program.cs`
 - Create: `src/AlpacaAllSkyWeather/appsettings.json`
 - Create: `tests/AlpacaAllSkyWeather.Tests/AlpacaAllSkyWeather.Tests.csproj`
+- Create: `tests/AlpacaAllSkyWeather.Tests/Usings.cs`
 - Create: `tests/AlpacaAllSkyWeather.Tests/PlaceholderTests.cs`
 
 **Interfaces:**
@@ -100,6 +101,17 @@ The `public partial class Program { }` marker is required so `Microsoft.AspNetCo
 }
 ```
 
+- [ ] **Step 3b: Create a shared `global using` file for the test project**
+
+`xunit`'s `[Fact]`/`Assert` are not covered by `ImplicitUsings`, so every test file
+would otherwise need its own `using Xunit;`. One shared file avoids repeating it:
+
+`tests/AlpacaAllSkyWeather.Tests/Usings.cs`:
+
+```csharp
+global using Xunit;
+```
+
 - [ ] **Step 4: Create the test project file**
 
 `tests/AlpacaAllSkyWeather.Tests/AlpacaAllSkyWeather.Tests.csproj`:
@@ -148,10 +160,15 @@ public class PlaceholderTests
 - [ ] **Step 6: Create the solution file and wire up the projects**
 
 ```bash
-dotnet new sln -n AlpacaAllSkyWeather
+dotnet new sln -n AlpacaAllSkyWeather --format sln
 dotnet sln add src/AlpacaAllSkyWeather/AlpacaAllSkyWeather.csproj
 dotnet sln add tests/AlpacaAllSkyWeather.Tests/AlpacaAllSkyWeather.Tests.csproj
 ```
+
+`--format sln` is required on the .NET 10 SDK, which otherwise defaults to the newer
+`.slnx` format — that needs Visual Studio 2022 17.13+, so the classic `.sln` is the
+safe choice for compatibility with whatever Visual Studio Community version is
+installed.
 
 - [ ] **Step 7: Build and run the placeholder test**
 
