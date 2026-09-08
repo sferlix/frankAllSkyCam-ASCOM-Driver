@@ -2141,3 +2141,152 @@ git commit -m "Fix Alpaca protocol issues found by ConformU"
 ```
 
 (Skip this step if no fixes were needed.)
+
+---
+
+### Task 12: Windows installer
+
+**Files:**
+- Create: `installer/AlpacaAllSkyWeather.iss`
+- Create: `installer/app.ico`
+- Modify: `.gitignore` (ignore `publish/` and `installer/Output/` — build output, not source)
+
+**Interfaces:** none (packaging-only task; no code changes to the driver itself).
+
+Added after Task 11 at the user's request, once the driver was verified working: the
+acquisition PC won't have the .NET SDK installed, so a self-contained, installable
+package is needed. Built and verified in this session — see the as-built note below
+for exact results; the steps are kept for reproducing or rebuilding after code changes.
+
+- [ ] **Step 1: Install the Inno Setup compiler**
+
+```powershell
+winget install -e --id JRSoftware.InnoSetup --source winget --silent --accept-package-agreements --accept-source-agreements
+```
+
+(If the `msstore` source errors with a certificate mismatch, `--source winget` bypasses it.)
+
+- [ ] **Step 2: Export the app icon as a real `.ico` file**
+
+Inno Setup needs an icon file on disk; `TrayIconFactory.CreateIcon()` only builds one
+in memory. Run a throwaway console app that references the main project and calls it:
+
+```csharp
+using AlpacaAllSkyWeather.TrayHost;
+
+var icon = TrayIconFactory.CreateIcon();
+using var fs = new FileStream(args[0], FileMode.Create);
+icon.Save(fs);
+```
+
+```bash
+dotnet run --project <throwaway-project> -- "installer/app.ico"
+```
+
+- [ ] **Step 3: Write the Inno Setup script**
+
+`installer/AlpacaAllSkyWeather.iss`:
+
+```ini
+#define MyAppName "frankAllSkyCam ASCOM Driver"
+#define MyAppVersion "1.0.0"
+#define MyAppPublisher "sferlazza"
+#define MyAppExeName "AlpacaAllSkyWeather.exe"
+
+[Setup]
+AppId={{B4049B49-2986-4248-884C-CF2B75475AE4}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+; Per-user install (no admin/UAC prompt needed), matching the per-user HKCU
+; autostart entry below - a machine-wide install under Program Files would
+; need admin rights while still only affecting the installing user's autostart.
+DefaultDirName={localappdata}\Programs\{#MyAppName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+PrivilegesRequired=lowest
+OutputDir=Output
+OutputBaseFilename=frankAllSkyCam-ASCOM-Driver-Setup
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+SetupIconFile=app.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
+
+[Languages]
+Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
+Name: "english"; MessagesFile: "compiler:Default.isl"
+
+[Tasks]
+Name: "autostart"; Description: "Avvia {#MyAppName} all'avvio di Windows"; GroupDescription: "Attività aggiuntive:"
+
+[Files]
+Source: "..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\Disinstalla {#MyAppName}"; Filename: "{uninstallexe}"
+
+[Registry]
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart; Flags: uninsdeletevalue
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "Avvia {#MyAppName} ora"; Flags: nowait postinstall skipifsilent
+```
+
+The `autostart` Task is unchecked/checked like any other install-time checkbox (checked
+by default here); the end user running the installer decides, and only then does the
+`[Registry]` entry get written — nothing is silently forced.
+
+`PrivilegesRequired=lowest` matters: Inno Setup defaults to `admin` when the install
+directory is under Program Files, which conflicts with a per-user (HKCU) autostart
+entry — Inno Setup itself warns about this ("per-user areas are used by the script")
+if left on `admin`. Installing under `{localappdata}\Programs` avoids both the
+elevation prompt and the inconsistency.
+
+- [ ] **Step 4: Publish self-contained, then compile the installer**
+
+```bash
+dotnet publish src/AlpacaAllSkyWeather -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=false -o publish/win-x64
+"C:\Users\<you>\AppData\Local\Programs\Inno Setup 6\ISCC.exe" installer\AlpacaAllSkyWeather.iss
+```
+
+Expected: `installer/Output/frankAllSkyCam-ASCOM-Driver-Setup.exe`. The published
+folder is ~186 MB (self-contained .NET 8 + the full ASP.NET Core shared framework —
+`Microsoft.NET.Sdk.Web` self-contained publishing always bundles the whole framework,
+and `PublishTrimmed` is not supported for WinForms); LZMA2 compression brings the
+installer itself down to ~58 MB.
+
+- [ ] **Step 5: Verify install and uninstall end-to-end**
+
+```bash
+installer\Output\frankAllSkyCam-ASCOM-Driver-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES /TASKS="autostart" /NORESTART
+```
+
+Confirm: the app launches from `%LocalAppData%\Programs\frankAllSkyCam ASCOM Driver\`,
+a Start Menu folder with both the app and uninstaller shortcuts exists, and
+`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` has a `frankAllSkyCam ASCOM Driver`
+value pointing at the installed exe. Then run `unins000.exe /VERYSILENT
+/SUPPRESSMSGBOXES /NORESTART` from the install directory and confirm the install
+directory, Start Menu folder, and registry value are all gone.
+
+- [ ] **Step 6: Commit the installer script and icon**
+
+```bash
+git add installer/AlpacaAllSkyWeather.iss installer/app.ico .gitignore
+git commit -m "Add Windows installer (Inno Setup)"
+```
+
+> **Result (2026-09-08):** Built and verified in this session. Inno Setup 6.7.3
+> installed via winget. First compile succeeded but Inno Setup warned that
+> `PrivilegesRequired=admin` (the implicit default for a Program-Files install)
+> was inconsistent with the script's per-user `[Registry]` autostart entry —
+> fixed by switching to a per-user install directory and
+> `PrivilegesRequired=lowest`, which also means the installer needs no UAC
+> elevation at all. Silent install → verify → silent uninstall was run
+> end-to-end: the autostart registry value, Start Menu shortcuts, and all
+> installed files were confirmed present after install and completely gone
+> after uninstall. Final installer: `frankAllSkyCam-ASCOM-Driver-Setup.exe`,
+> ~58 MB.
