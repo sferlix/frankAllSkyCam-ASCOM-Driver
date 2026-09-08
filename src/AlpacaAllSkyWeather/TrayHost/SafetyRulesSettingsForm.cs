@@ -21,7 +21,7 @@ public sealed class SafetyRulesSettingsForm : Form
     {
         _appSettingsPath = appSettingsPath;
 
-        Text = "Impostazioni soglie di sicurezza";
+        Text = "Safety threshold settings";
         BackColor = Background;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
@@ -34,7 +34,7 @@ public sealed class SafetyRulesSettingsForm : Form
 
         var headerLabel = new Label
         {
-            Text = "Ogni soglia si può attivare o disattivare singolarmente.\nNon sicuro quando il valore supera (>) o scende sotto (<) la soglia.",
+            Text = "Each threshold can be enabled or disabled individually.\nUnsafe when the value goes above (>) or below (<) the threshold.",
             ForeColor = TextMuted,
             AutoSize = false,
             Size = new Size(470, 34),
@@ -59,7 +59,7 @@ public sealed class SafetyRulesSettingsForm : Form
         };
 
         var maxAgeRow = new Panel { Size = new Size(445, 28), BackColor = Background };
-        var maxAgeLabel = new Label { Text = "Dato meteo troppo vecchio dopo", ForeColor = TextPrimary, AutoSize = true, Location = new Point(0, 5) };
+        var maxAgeLabel = new Label { Text = "Weather data too old after", ForeColor = TextPrimary, AutoSize = true, Location = new Point(0, 5) };
         _maxDataAgeTextBox = new TextBox
         {
             Text = current.MaxDataAgeMinutes.ToString(CultureInfo.InvariantCulture),
@@ -76,23 +76,23 @@ public sealed class SafetyRulesSettingsForm : Form
         maxAgeRow.Controls.Add(maxAgeUnit);
         flow.Controls.Add(maxAgeRow);
 
-        AddRow(flow, "Copertura nuvolosa >", "%", current.CloudCover, (o, r) => o.CloudCover = r);
-        AddRow(flow, "Pioggia >", "mm/h", current.RainRate, (o, r) => o.RainRate = r);
-        AddRow(flow, "Raffica di vento >", "m/s", current.WindGust, (o, r) => o.WindGust = r);
-        AddRow(flow, "Velocità vento >", "m/s", current.WindSpeed, (o, r) => o.WindSpeed = r);
-        AddRow(flow, "Luminosità cielo >", "lux", current.SkyBrightness, (o, r) => o.SkyBrightness = r);
-        AddRow(flow, "Umidità >", "%", current.Humidity, (o, r) => o.Humidity = r);
-        AddRow(flow, "Punto di rugiada >", "°C", current.DewPoint, (o, r) => o.DewPoint = r);
-        AddRow(flow, "Qualità cielo <", "mag/arcsec²", current.SkyQuality, (o, r) => o.SkyQuality = r);
-        AddRow(flow, "Temperatura <", "°C", current.TemperatureMin, (o, r) => o.TemperatureMin = r);
-        AddRow(flow, "Pressione <", "hPa", current.PressureMin, (o, r) => o.PressureMin = r);
-        AddRow(flow, "Stelle rilevate <", "", current.StarCountMin, (o, r) => o.StarCountMin = r);
+        AddRow(flow, "Cloud cover >", "%", current.CloudCover, (o, r) => o.CloudCover = r);
+        AddRow(flow, "Rain >", "mm/h", current.RainRate, (o, r) => o.RainRate = r);
+        AddRow(flow, "Wind gust >", "m/s", current.WindGust, (o, r) => o.WindGust = r);
+        AddRow(flow, "Wind speed >", "m/s", current.WindSpeed, (o, r) => o.WindSpeed = r);
+        AddRow(flow, "Sky brightness >", "lux", current.SkyBrightness, (o, r) => o.SkyBrightness = r);
+        AddRow(flow, "Humidity >", "%", current.Humidity, (o, r) => o.Humidity = r);
+        AddRow(flow, "Dew point >", "°C", current.DewPoint, (o, r) => o.DewPoint = r);
+        AddRow(flow, "Sky quality <", "mag/arcsec²", current.SkyQuality, (o, r) => o.SkyQuality = r);
+        AddRow(flow, "Temperature <", "°C", current.TemperatureMin, (o, r) => o.TemperatureMin = r);
+        AddRow(flow, "Pressure <", "hPa", current.PressureMin, (o, r) => o.PressureMin = r);
+        AddRow(flow, "Stars detected <", "", current.StarCountMin, (o, r) => o.StarCountMin = r);
 
         var nightRow = new Panel { Size = new Size(445, 28), BackColor = Background };
         _nightWindowCheckBox = new CheckBox { AutoSize = true, Location = new Point(0, 5), Checked = current.NightWindowEnabled };
         var nightLabel = new Label
         {
-            Text = "Fuori dalla finestra notturna (Night Start/End)",
+            Text = "Outside the night window (Night Start/End)",
             ForeColor = TextPrimary,
             AutoSize = true,
             Location = new Point(22, 6),
@@ -105,7 +105,7 @@ public sealed class SafetyRulesSettingsForm : Form
 
         var saveButton = new Button
         {
-            Text = "Salva",
+            Text = "Save",
             DialogResult = DialogResult.OK,
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
@@ -117,7 +117,7 @@ public sealed class SafetyRulesSettingsForm : Form
 
         var cancelButton = new Button
         {
-            Text = "Annulla",
+            Text = "Cancel",
             DialogResult = DialogResult.Cancel,
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,

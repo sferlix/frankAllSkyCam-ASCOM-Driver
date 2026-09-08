@@ -30,11 +30,10 @@ SetupIconFile=app.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 
 [Languages]
-Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "autostart"; Description: "Avvia {#MyAppName} all'avvio di Windows"; GroupDescription: "Attività aggiuntive:"
+Name: "autostart"; Description: "Launch {#MyAppName} at Windows startup"; GroupDescription: "Additional tasks:"
 
 [Files]
 ; appsettings.json is excluded from the bulk copy and installed separately with
@@ -45,10 +44,10 @@ Source: "..\publish\win-x64\appsettings.json"; DestDir: "{app}"; Flags: onlyifdo
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Disinstalla {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Registry]
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "{#MyAppName}"; ValueData: """{app}\{#MyAppExeName}"""; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "Avvia {#MyAppName} ora"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName} now"; Flags: nowait postinstall skipifsilent

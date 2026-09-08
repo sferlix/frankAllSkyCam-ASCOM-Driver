@@ -69,7 +69,7 @@ public sealed class SafetyAlertService : BackgroundService
         }
 
         return currentIsSafe
-            ? "✅ AllSky Weather: condizioni tornate sicure per la ripresa."
-            : $"⚠️ AllSky Weather: condizioni NON sicure - {string.Join(", ", unsafeReasons)}";
+            ? "✅ AllSky Weather: conditions are safe again for imaging."
+            : $"⚠️ AllSky Weather: conditions are NOT safe - {string.Join(", ", unsafeReasons)}";
     }
 }

@@ -56,9 +56,9 @@ public sealed class NightCard : Control
         using var mutedBrush = new SolidBrush(TextMuted);
 
         const float textX = 14;
-        g.DrawString("INIZIO NOTTE", captionFont, mutedBrush, textX, 40);
+        g.DrawString("NIGHT START", captionFont, mutedBrush, textX, 40);
         g.DrawString(_start, valueFont, valueBrush, textX, 49);
-        g.DrawString("FINE NOTTE", captionFont, mutedBrush, textX, 65);
+        g.DrawString("NIGHT END", captionFont, mutedBrush, textX, 65);
         g.DrawString(_end, valueFont, valueBrush, textX, 74);
     }
 

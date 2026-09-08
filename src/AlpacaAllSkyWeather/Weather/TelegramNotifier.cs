@@ -49,7 +49,7 @@ public sealed class TelegramNotifier : IDisposable
     {
         if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
         {
-            return TelegramSendResult.Fail("Token o Chat ID mancanti.");
+            return TelegramSendResult.Fail("Missing Token or Chat ID.");
         }
 
         try
@@ -69,12 +69,12 @@ public sealed class TelegramNotifier : IDisposable
             }
 
             logger.LogWarning("Telegram API returned {StatusCode} sending a notification: {Body}", response.StatusCode, body);
-            return TelegramSendResult.Fail($"Telegram ha risposto {(int)response.StatusCode} {response.StatusCode}: {body}");
+            return TelegramSendResult.Fail($"Telegram responded {(int)response.StatusCode} {response.StatusCode}: {body}");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             logger.LogWarning(ex, "Failed to send Telegram notification");
-            return TelegramSendResult.Fail($"Errore di rete: {ex.Message}");
+            return TelegramSendResult.Fail($"Network error: {ex.Message}");
         }
     }
 
@@ -92,7 +92,7 @@ public sealed class TelegramNotifier : IDisposable
     {
         if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
         {
-            return TelegramSendResult.Fail("Token o Chat ID mancanti.");
+            return TelegramSendResult.Fail("Missing Token or Chat ID.");
         }
 
         try
@@ -119,12 +119,12 @@ public sealed class TelegramNotifier : IDisposable
             }
 
             logger.LogWarning("Telegram API returned {StatusCode} sending a photo: {Body}", response.StatusCode, body);
-            return TelegramSendResult.Fail($"Telegram ha risposto {(int)response.StatusCode} {response.StatusCode}: {body}");
+            return TelegramSendResult.Fail($"Telegram responded {(int)response.StatusCode} {response.StatusCode}: {body}");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
             logger.LogWarning(ex, "Failed to send Telegram photo");
-            return TelegramSendResult.Fail($"Errore di rete: {ex.Message}");
+            return TelegramSendResult.Fail($"Network error: {ex.Message}");
         }
     }
 

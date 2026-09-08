@@ -30,7 +30,7 @@ public sealed class SafetyMonitorDevice
             var snapshot = _state.TryGetLatest();
             if (snapshot is null)
             {
-                return new[] { "nessun dato meteo ricevuto" };
+                return new[] { "no weather data received" };
             }
 
             var rules = _rules.CurrentValue;
@@ -39,28 +39,28 @@ public sealed class SafetyMonitorDevice
             var ageMinutes = (DateTimeOffset.UtcNow - snapshot.PolledAtUtc).TotalMinutes;
             if (ageMinutes > rules.MaxDataAgeMinutes)
             {
-                reasons.Add($"dato meteo vecchio di {ageMinutes:0} minuti");
+                reasons.Add($"weather data is {ageMinutes:0} minutes old");
             }
 
-            AddIfAbove(reasons, rules.CloudCover, snapshot.CloudCover, v => $"copertura nuvolosa {v:0}%");
-            AddIfAbove(reasons, rules.RainRate, snapshot.RainRate, _ => "pioggia rilevata");
-            AddIfAbove(reasons, rules.WindGust, snapshot.WindGust, v => $"raffica di vento {v:0} m/s");
-            AddIfAbove(reasons, rules.WindSpeed, snapshot.WindSpeed, v => $"vento {v:0} m/s");
-            AddIfAbove(reasons, rules.SkyBrightness, snapshot.SkyBrightness, v => $"cielo troppo luminoso ({v:0} lux)");
-            AddIfAbove(reasons, rules.Humidity, snapshot.Humidity, v => $"umidità {v:0}%");
-            AddIfAbove(reasons, rules.DewPoint, snapshot.DewPoint, v => $"punto di rugiada {v:0.0}°C");
+            AddIfAbove(reasons, rules.CloudCover, snapshot.CloudCover, v => $"cloud cover {v:0}%");
+            AddIfAbove(reasons, rules.RainRate, snapshot.RainRate, _ => "rain detected");
+            AddIfAbove(reasons, rules.WindGust, snapshot.WindGust, v => $"wind gust {v:0} m/s");
+            AddIfAbove(reasons, rules.WindSpeed, snapshot.WindSpeed, v => $"wind {v:0} m/s");
+            AddIfAbove(reasons, rules.SkyBrightness, snapshot.SkyBrightness, v => $"sky too bright ({v:0} lux)");
+            AddIfAbove(reasons, rules.Humidity, snapshot.Humidity, v => $"humidity {v:0}%");
+            AddIfAbove(reasons, rules.DewPoint, snapshot.DewPoint, v => $"dew point {v:0.0}°C");
 
-            AddIfBelow(reasons, rules.SkyQuality, snapshot.SkyQuality, v => $"qualità cielo bassa ({v:0.0} mag/arcsec²)");
-            AddIfBelow(reasons, rules.TemperatureMin, snapshot.Temperature, v => $"temperatura {v:0.0}°C");
-            AddIfBelow(reasons, rules.PressureMin, snapshot.Pressure, v => $"pressione bassa {v:0.0} hPa");
-            AddIfBelow(reasons, rules.StarCountMin, snapshot.StarCount, v => $"poche stelle rilevate ({(int)v})");
+            AddIfBelow(reasons, rules.SkyQuality, snapshot.SkyQuality, v => $"sky quality low ({v:0.0} mag/arcsec²)");
+            AddIfBelow(reasons, rules.TemperatureMin, snapshot.Temperature, v => $"temperature {v:0.0}°C");
+            AddIfBelow(reasons, rules.PressureMin, snapshot.Pressure, v => $"pressure low {v:0.0} hPa");
+            AddIfBelow(reasons, rules.StarCountMin, snapshot.StarCount, v => $"few stars detected ({(int)v})");
 
             if (rules.NightWindowEnabled)
             {
                 var now = DateTimeOffset.UtcNow;
                 if (now < snapshot.NightStart || now > snapshot.NightEnd)
                 {
-                    reasons.Add("fuori dalla finestra notturna");
+                    reasons.Add("outside the night window");
                 }
             }
 

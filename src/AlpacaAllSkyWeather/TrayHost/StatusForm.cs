@@ -80,7 +80,7 @@ public sealed class StatusForm : Form
 
         _subtitleLabel = new Label
         {
-            Text = "in attesa del primo aggiornamento...",
+            Text = "waiting for the first update...",
             Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Pixel),
             ForeColor = TextMuted,
             BackColor = Color.Transparent,
@@ -111,17 +111,17 @@ public sealed class StatusForm : Form
             grid.RowStyles.Add(new RowStyle(SizeType.Percent, 25f));
         }
 
-        _temperature = new MetricCard(WeatherIcons.Thermometer, AccentTemp, "Temperatura") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _humidity = new MetricCard(WeatherIcons.Droplet, AccentHumidity, "Umidita") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _dewPoint = new MetricCard(WeatherIcons.Droplet, AccentHumidity, "Punto di rugiada") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _pressure = new MetricCard(WeatherIcons.Gauge, AccentPressure, "Pressione") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _cloudCover = new MetricCard(WeatherIcons.Cloud, AccentCloud, "Copertura nuvolosa") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _skyBrightness = new MetricCard(WeatherIcons.Sun, AccentSky, "Luminosita cielo") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _skyQuality = new MetricCard(WeatherIcons.Star, AccentSky, "Qualita cielo") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _rainRate = new MetricCard(WeatherIcons.DropletWithRain, AccentRain, "Pioggia") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _windGust = new MetricCard(WeatherIcons.Wind, AccentWind, "Raffica") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _wind = new CompassCard(AccentWind, CompassNeedle, "Vento") { Margin = new Padding(4), Dock = DockStyle.Fill };
-        _starCount = new MetricCard(WeatherIcons.FiveStar, AccentStar, "Stelle rilevate") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _temperature = new MetricCard(WeatherIcons.Thermometer, AccentTemp, "Temperature") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _humidity = new MetricCard(WeatherIcons.Droplet, AccentHumidity, "Humidity") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _dewPoint = new MetricCard(WeatherIcons.Droplet, AccentHumidity, "Dew point") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _pressure = new MetricCard(WeatherIcons.Gauge, AccentPressure, "Pressure") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _cloudCover = new MetricCard(WeatherIcons.Cloud, AccentCloud, "Cloud cover") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _skyBrightness = new MetricCard(WeatherIcons.Sun, AccentSky, "Sky brightness") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _skyQuality = new MetricCard(WeatherIcons.Star, AccentSky, "Sky quality") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _rainRate = new MetricCard(WeatherIcons.DropletWithRain, AccentRain, "Rain") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _windGust = new MetricCard(WeatherIcons.Wind, AccentWind, "Gust") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _wind = new CompassCard(AccentWind, CompassNeedle, "Wind") { Margin = new Padding(4), Dock = DockStyle.Fill };
+        _starCount = new MetricCard(WeatherIcons.FiveStar, AccentStar, "Stars detected") { Margin = new Padding(4), Dock = DockStyle.Fill };
         _night = new NightCard(AccentSky) { Margin = new Padding(4), Dock = DockStyle.Fill };
 
         grid.Controls.Add(_temperature, 0, 0);
@@ -178,7 +178,7 @@ public sealed class StatusForm : Form
 
         using var font = new Font("Segoe UI", 9f, FontStyle.Bold, GraphicsUnit.Pixel);
         using var textBrush = new SolidBrush(_isSafe ? DotFresh : DotStale);
-        var text = _isSafe ? "SICURO" : $"NON SICURO - {_safetyText}";
+        var text = _isSafe ? "SAFE" : $"NOT SAFE - {_safetyText}";
         g.DrawString(text, font, textBrush, 14, 6);
     }
 
@@ -234,7 +234,7 @@ public sealed class StatusForm : Form
         if (snapshot is null)
         {
             _dotColor = DotStale;
-            _subtitleLabel.Text = "in attesa del primo aggiornamento...";
+            _subtitleLabel.Text = "waiting for the first update...";
             _headerPanel.Invalidate();
             return;
         }
@@ -246,7 +246,7 @@ public sealed class StatusForm : Form
             < 600 => DotAging,
             _ => DotStale,
         };
-        _subtitleLabel.Text = $"aggiornato alle {snapshot.PolledAtUtc.ToLocalTime():HH:mm:ss} - frankAllSkyCam";
+        _subtitleLabel.Text = $"updated at {snapshot.PolledAtUtc.ToLocalTime():HH:mm:ss} - frankAllSkyCam";
         _headerPanel.Invalidate();
 
         var c = CultureInfo.InvariantCulture;

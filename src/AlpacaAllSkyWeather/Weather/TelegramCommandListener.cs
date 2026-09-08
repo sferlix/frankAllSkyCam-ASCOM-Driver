@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 namespace AlpacaAllSkyWeather.Weather;
 
 /// <summary>Long-polls Telegram for incoming messages and replies to "now"/"status" with a
-/// screenshot of the status window — the exact same view the user sees via "Mostra stato", not a
+/// screenshot of the status window — the exact same view the user sees via "Show status", not a
 /// separately maintained text summary. Owns its own HttpClient for the same reason as
 /// <see cref="TelegramNotifier"/> (see its remarks on IHttpClientFactory).</summary>
 public sealed class TelegramCommandListener : BackgroundService
@@ -55,7 +55,7 @@ public sealed class TelegramCommandListener : BackgroundService
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogWarning(ex, "Errore durante il polling dei comandi Telegram");
+                _logger.LogWarning(ex, "Error while polling Telegram for commands");
                 await DelayIgnoringCancellation(stoppingToken);
             }
         }
@@ -65,7 +65,7 @@ public sealed class TelegramCommandListener : BackgroundService
     {
         var image = await _renderer.RenderAsync(ct);
         var result = image is null
-            ? await _notifier.SendAsync(botToken, chatId, "Nessun dato disponibile al momento.", ct)
+            ? await _notifier.SendAsync(botToken, chatId, "No data available at the moment.", ct)
             : await _notifier.SendPhotoAsync(botToken, chatId, image, caption: null, ct);
 
         var allSkyCamUrl = _options.CurrentValue.AllSkyCamImageUrl;
@@ -96,7 +96,7 @@ public sealed class TelegramCommandListener : BackgroundService
             using var response = await httpClient.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning("Download dell'immagine AllSkyCam fallito: {StatusCode}", response.StatusCode);
+                logger.LogWarning("Failed to download the AllSkyCam image: {StatusCode}", response.StatusCode);
                 return null;
             }
 
@@ -104,7 +104,7 @@ public sealed class TelegramCommandListener : BackgroundService
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            logger.LogWarning(ex, "Errore durante il download dell'immagine AllSkyCam");
+            logger.LogWarning(ex, "Error while downloading the AllSkyCam image");
             return null;
         }
     }

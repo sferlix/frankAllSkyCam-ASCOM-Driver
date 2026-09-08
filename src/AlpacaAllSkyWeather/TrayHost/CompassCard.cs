@@ -6,7 +6,7 @@ namespace AlpacaAllSkyWeather.TrayHost;
 /// needle overlaid pointing at the live direction, plus the numeric degrees and cardinal abbreviation.</summary>
 public sealed class CompassCard : Control
 {
-    private static readonly string[] CardinalNames = { "N", "NE", "E", "SE", "S", "SO", "O", "NO" };
+    private static readonly string[] CardinalNames = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
     private static readonly Color CardBackground = Color.FromArgb(0x1E, 0x21, 0x2D);
     private static readonly Color CardBorder = Color.FromArgb(0x2A, 0x2E, 0x3D);

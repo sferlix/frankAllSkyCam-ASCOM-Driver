@@ -48,7 +48,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(new WeatherState());
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("dato", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("data", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -87,10 +87,10 @@ public class SafetyMonitorDeviceTests
     }
 
     [Theory]
-    [InlineData(nameof(WeatherJsonDto.CloudCover), 95, "nuvol")]
-    [InlineData(nameof(WeatherJsonDto.RainRate), 0.1, "pioggia")]
-    [InlineData(nameof(WeatherJsonDto.WindGust), 20, "raffica")]
-    [InlineData(nameof(WeatherJsonDto.SkyBrightness), 5000, "luminos")]
+    [InlineData(nameof(WeatherJsonDto.CloudCover), 95, "cloud")]
+    [InlineData(nameof(WeatherJsonDto.RainRate), 0.1, "rain")]
+    [InlineData(nameof(WeatherJsonDto.WindGust), 20, "gust")]
+    [InlineData(nameof(WeatherJsonDto.SkyBrightness), 5000, "bright")]
     public void Above_threshold_rules_report_unsafe_when_enabled(string field, double value, string expectedReasonSubstring)
     {
         var rules = new SafetyRulesOptions();
@@ -119,7 +119,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("vento", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("wind", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("umidit", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("humid", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("rugiada", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("dew", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("qualit", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("quality", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -167,7 +167,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("temperatura", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("temperature", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -179,7 +179,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("pressione", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("pressure", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("stelle", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("stars", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -208,7 +208,7 @@ public class SafetyMonitorDeviceTests
         var device = CreateDevice(state, rules);
 
         Assert.False(device.IsSafe);
-        Assert.Contains(device.UnsafeReasons, r => r.Contains("notte", StringComparison.OrdinalIgnoreCase) || r.Contains("notturna", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(device.UnsafeReasons, r => r.Contains("night", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

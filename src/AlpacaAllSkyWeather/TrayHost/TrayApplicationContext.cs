@@ -33,35 +33,35 @@ public sealed class TrayApplicationContext : ApplicationContext
 
         var menu = new ContextMenuStrip();
 
-        var statusItem = new ToolStripMenuItem("Mostra stato");
+        var statusItem = new ToolStripMenuItem("Show status");
         statusItem.Click += (_, _) => ShowStatusWindow();
         menu.Items.Add(statusItem);
 
-        var notificationsItem = new ToolStripMenuItem("Impostazioni notifiche...");
+        var notificationsItem = new ToolStripMenuItem("Notification settings...");
         notificationsItem.Click += (_, _) => ShowNotificationSettings();
         menu.Items.Add(notificationsItem);
 
-        var thresholdsItem = new ToolStripMenuItem("Impostazioni soglie di sicurezza...");
+        var thresholdsItem = new ToolStripMenuItem("Safety threshold settings...");
         thresholdsItem.Click += (_, _) => ShowSafetyRulesSettings();
         menu.Items.Add(thresholdsItem);
         menu.Items.Add(new ToolStripSeparator());
 
-        var toggleItem = new ToolStripMenuItem("Ferma");
+        var toggleItem = new ToolStripMenuItem("Stop");
         toggleItem.Click += async (_, _) =>
         {
             if (_running)
             {
                 await _app.StopAsync();
-                toggleItem.Text = "Avvia";
+                toggleItem.Text = "Start";
             }
             else
             {
                 await _app.StartAsync();
-                toggleItem.Text = "Ferma";
+                toggleItem.Text = "Stop";
             }
             _running = !_running;
         };
-        var exitItem = new ToolStripMenuItem("Esci");
+        var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => ExitThread();
         menu.Items.Add(toggleItem);
         menu.Items.Add(exitItem);
@@ -69,7 +69,7 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifyIcon = new NotifyIcon
         {
             Icon = _icon,
-            Text = $"AllSky Weather (porta {httpPort})",
+            Text = $"AllSky Weather (port {httpPort})",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -159,8 +159,8 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         var snapshot = _state.TryGetLatest();
         var lastPoll = snapshot is null
-            ? "nessun poll riuscito ancora"
-            : $"ultimo poll: {snapshot.PolledAtUtc.ToLocalTime():HH:mm:ss}";
+            ? "no successful poll yet"
+            : $"last poll: {snapshot.PolledAtUtc.ToLocalTime():HH:mm:ss}";
         // NotifyIcon.Text has a 63-character limit.
         var text = $"AllSky Weather :{httpPort} - {lastPoll}";
         _notifyIcon.Text = text.Length > 63 ? text[..63] : text;

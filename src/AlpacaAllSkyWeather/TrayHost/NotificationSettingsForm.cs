@@ -27,7 +27,7 @@ public sealed class NotificationSettingsForm : Form
         _notifier = notifier;
         _appSettingsPath = appSettingsPath;
 
-        Text = "Impostazioni notifiche";
+        Text = "Notification settings";
         BackColor = Background;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
@@ -40,7 +40,7 @@ public sealed class NotificationSettingsForm : Form
 
         var infoLabel = new Label
         {
-            Text = "Ricevi un messaggio Telegram quando le condizioni diventano non sicure (e quando tornano sicure).",
+            Text = "Get a Telegram message when conditions become unsafe (and when they become safe again).",
             ForeColor = TextMuted,
             AutoSize = false,
             Size = new Size(340, 40),
@@ -49,7 +49,7 @@ public sealed class NotificationSettingsForm : Form
 
         _enabledCheckBox = new CheckBox
         {
-            Text = "Abilita notifiche Telegram",
+            Text = "Enable Telegram notifications",
             ForeColor = TextPrimary,
             AutoSize = true,
             Location = new Point(20, 64),
@@ -78,7 +78,7 @@ public sealed class NotificationSettingsForm : Form
             Size = new Size(340, 24),
         };
 
-        var allSkyCamUrlLabel = new Label { Text = "URL immagine AllSkyCam", ForeColor = TextMuted, AutoSize = true, Location = new Point(20, 200) };
+        var allSkyCamUrlLabel = new Label { Text = "AllSkyCam image URL", ForeColor = TextMuted, AutoSize = true, Location = new Point(20, 200) };
         _allSkyCamUrlTextBox = new TextBox
         {
             Text = current.AllSkyCamImageUrl,
@@ -91,7 +91,7 @@ public sealed class NotificationSettingsForm : Form
 
         var testButton = new Button
         {
-            Text = "Invia messaggio di prova",
+            Text = "Send a test message",
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = AccentWind,
@@ -111,7 +111,7 @@ public sealed class NotificationSettingsForm : Form
 
         var saveButton = new Button
         {
-            Text = "Salva",
+            Text = "Save",
             DialogResult = DialogResult.OK,
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
@@ -123,7 +123,7 @@ public sealed class NotificationSettingsForm : Form
 
         var cancelButton = new Button
         {
-            Text = "Annulla",
+            Text = "Cancel",
             DialogResult = DialogResult.Cancel,
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
@@ -152,11 +152,11 @@ public sealed class NotificationSettingsForm : Form
     private async Task TestAsync()
     {
         _statusLabel.ForeColor = TextMuted;
-        _statusLabel.Text = "Invio in corso...";
+        _statusLabel.Text = "Sending...";
         var result = await _notifier.SendAsync(
-            _botTokenTextBox.Text.Trim(), _chatIdTextBox.Text.Trim(), "🔭 AllSky Weather: messaggio di prova.");
+            _botTokenTextBox.Text.Trim(), _chatIdTextBox.Text.Trim(), "🔭 AllSky Weather: test message.");
         _statusLabel.ForeColor = result.Success ? StatusOk : StatusError;
-        _statusLabel.Text = result.Success ? "Messaggio inviato." : $"Invio fallito: {result.ErrorDetail}";
+        _statusLabel.Text = result.Success ? "Message sent." : $"Send failed: {result.ErrorDetail}";
     }
 
     private void Save()
