@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using Microsoft.Extensions.Logging;
 
 namespace AlpacaAllSkyWeather.Weather;
@@ -14,23 +16,28 @@ public readonly record struct TelegramSendResult(bool Success, string? ErrorDeta
 
 /// <summary>Sends alert messages via the Telegram Bot API (free, no account billing —
 /// see <see cref="NotificationOptions"/>). Missing token/chat ID is treated as "not configured
-/// yet", not an error: it returns a failure result without making a request.</summary>
-public sealed class TelegramNotifier
+/// yet", not an error: it returns a failure result without making a request.
+///
+/// Owns a single long-lived <see cref="HttpClient"/> directly instead of going through
+/// <c>IHttpClientFactory</c>: on at least one real machine, a factory-created client with this
+/// exact IPv4-only <c>ConnectCallback</c> failed every request with an immediate
+/// <see cref="TaskCanceledException"/>, while a plain <c>new HttpClient(handler)</c> using the
+/// identical handler succeeded consistently in under 200ms. Root cause not fully identified
+/// (suspected interaction between the factory's handler lifetime/pooling and a custom
+/// ConnectCallback), but owning the client directly reproduced the working behavior.</summary>
+public sealed class TelegramNotifier : IDisposable
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
     private readonly ILogger<TelegramNotifier> _logger;
 
-    public TelegramNotifier(IHttpClientFactory httpClientFactory, ILogger<TelegramNotifier> logger)
+    public TelegramNotifier(ILogger<TelegramNotifier> logger)
     {
-        _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _httpClient = new HttpClient(CreateIPv4OnlyHandler());
     }
 
     public Task<TelegramSendResult> SendAsync(string botToken, string chatId, string message, CancellationToken cancellationToken = default)
-    {
-        using var httpClient = _httpClientFactory.CreateClient();
-        return SendAsync(httpClient, botToken, chatId, message, _logger, cancellationToken);
-    }
+        => SendAsync(_httpClient, botToken, chatId, message, _logger, cancellationToken);
 
     internal static async Task<TelegramSendResult> SendAsync(
         HttpClient httpClient,
@@ -70,4 +77,28 @@ public sealed class TelegramNotifier
             return TelegramSendResult.Fail($"Errore di rete: {ex.Message}");
         }
     }
+
+    /// <summary>Forces IPv4: .NET's Happy Eyeballs can stall for many seconds on networks where
+    /// IPv6 has no working route (common on home routers) before falling back to IPv4, even
+    /// though tools like curl fail over almost instantly.</summary>
+    private static SocketsHttpHandler CreateIPv4OnlyHandler() => new()
+    {
+        ConnectCallback = async (context, cancellationToken) =>
+        {
+            var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, AddressFamily.InterNetwork, cancellationToken);
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            try
+            {
+                await socket.ConnectAsync(addresses[0], context.DnsEndPoint.Port, cancellationToken);
+                return new NetworkStream(socket, ownsSocket: true);
+            }
+            catch
+            {
+                socket.Dispose();
+                throw;
+            }
+        },
+    };
+
+    public void Dispose() => _httpClient.Dispose();
 }
