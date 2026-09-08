@@ -3,7 +3,7 @@
 ; script with ISCC.exe (Inno Setup Compiler). See docs/superpowers/plans for the full build steps.
 
 #define MyAppName "frankAllSkyCam ASCOM Driver"
-#define MyAppVersion "1.1.2"
+#define MyAppVersion "1.2.0"
 #define MyAppPublisher "sferlazza"
 #define MyAppExeName "AlpacaAllSkyWeather.exe"
 
