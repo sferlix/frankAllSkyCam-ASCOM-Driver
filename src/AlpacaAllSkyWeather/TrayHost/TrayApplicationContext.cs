@@ -1,4 +1,6 @@
+using AlpacaAllSkyWeather.Alpaca;
 using AlpacaAllSkyWeather.Weather;
+using Microsoft.Extensions.Options;
 
 namespace AlpacaAllSkyWeather.TrayHost;
 
@@ -6,6 +8,9 @@ public sealed class TrayApplicationContext : ApplicationContext
 {
     private readonly WebApplication _app;
     private readonly WeatherState _state;
+    private readonly SafetyMonitorDevice _safety;
+    private readonly TelegramNotifier _notifier;
+    private readonly string _appSettingsPath;
     private readonly NotifyIcon _notifyIcon;
     private readonly Icon _icon;
     private readonly System.Windows.Forms.Timer _tooltipTimer;
@@ -16,6 +21,9 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         _app = app;
         _state = app.Services.GetRequiredService<WeatherState>();
+        _safety = app.Services.GetRequiredService<SafetyMonitorDevice>();
+        _notifier = app.Services.GetRequiredService<TelegramNotifier>();
+        _appSettingsPath = Path.Combine(app.Environment.ContentRootPath, "appsettings.json");
         _icon = TrayIconFactory.CreateIcon();
 
         var menu = new ContextMenuStrip();
@@ -23,6 +31,10 @@ public sealed class TrayApplicationContext : ApplicationContext
         var statusItem = new ToolStripMenuItem("Mostra stato");
         statusItem.Click += (_, _) => ShowStatusWindow();
         menu.Items.Add(statusItem);
+
+        var notificationsItem = new ToolStripMenuItem("Impostazioni notifiche...");
+        notificationsItem.Click += (_, _) => ShowNotificationSettings();
+        menu.Items.Add(notificationsItem);
         menu.Items.Add(new ToolStripSeparator());
 
         var toggleItem = new ToolStripMenuItem("Ferma");
@@ -73,7 +85,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         if (_statusForm is null || _statusForm.IsDisposed)
         {
-            _statusForm = new StatusForm(_state);
+            _statusForm = new StatusForm(_state, _safety);
             _statusForm.Show();
         }
 
@@ -83,6 +95,13 @@ public sealed class TrayApplicationContext : ApplicationContext
         }
 
         _statusForm.Activate();
+    }
+
+    private void ShowNotificationSettings()
+    {
+        var current = _app.Services.GetRequiredService<IOptionsMonitor<NotificationOptions>>().CurrentValue;
+        using var form = new NotificationSettingsForm(current, _notifier, _appSettingsPath);
+        form.ShowDialog();
     }
 
     private void UpdateTooltip(int httpPort)

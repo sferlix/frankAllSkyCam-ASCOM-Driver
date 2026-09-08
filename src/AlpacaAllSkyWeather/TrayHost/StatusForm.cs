@@ -1,4 +1,5 @@
 using System.Globalization;
+using AlpacaAllSkyWeather.Alpaca;
 using AlpacaAllSkyWeather.Weather;
 
 namespace AlpacaAllSkyWeather.TrayHost;
@@ -25,10 +26,14 @@ public sealed class StatusForm : Form
     private static readonly Color DotStale = Color.FromArgb(0xE5, 0x73, 0x73);
 
     private readonly WeatherState _state;
+    private readonly SafetyMonitorDevice _safety;
     private readonly System.Windows.Forms.Timer _refreshTimer;
     private readonly Panel _headerPanel;
+    private readonly Panel _safetyBanner;
     private readonly Label _subtitleLabel;
     private Color _dotColor = DotStale;
+    private bool _isSafe;
+    private string _safetyText = "";
 
     private readonly MetricCard _temperature;
     private readonly MetricCard _humidity;
@@ -43,13 +48,14 @@ public sealed class StatusForm : Form
     private readonly MetricCard _starCount;
     private readonly NightCard _night;
 
-    public StatusForm(WeatherState state)
+    public StatusForm(WeatherState state, SafetyMonitorDevice safety)
     {
         _state = state;
+        _safety = safety;
 
         Text = "frankAllSkyCam ASCOM Driver";
         BackColor = Background;
-        ClientSize = new Size(14 * 2 + 3 * 168 + 2 * 8, 50 + 14 * 2 + 4 * 94 + 3 * 8);
+        ClientSize = new Size(14 * 2 + 3 * 168 + 2 * 8, 50 + 26 + 14 * 2 + 4 * 94 + 3 * 8);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         StartPosition = FormStartPosition.Manual;
@@ -81,6 +87,9 @@ public sealed class StatusForm : Form
 
         _headerPanel.Controls.Add(titleLabel);
         _headerPanel.Controls.Add(_subtitleLabel);
+
+        _safetyBanner = new Panel { Dock = DockStyle.Top, Height = 26, BackColor = Background };
+        _safetyBanner.Paint += SafetyBanner_Paint;
 
         var grid = new TableLayoutPanel
         {
@@ -126,6 +135,7 @@ public sealed class StatusForm : Form
         grid.Controls.Add(_night, 2, 3);
 
         Controls.Add(grid);
+        Controls.Add(_safetyBanner);
         Controls.Add(_headerPanel);
 
         _refreshTimer = new System.Windows.Forms.Timer { Interval = 5000 };
@@ -156,6 +166,19 @@ public sealed class StatusForm : Form
         g.DrawString(badgeText, badgeFont, badgeTextBrush, badgeRect.X + 7, badgeRect.Y + 3);
     }
 
+    private void SafetyBanner_Paint(object? sender, PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        var bg = _isSafe ? Color.FromArgb(0x18, DotFresh) : Color.FromArgb(0x22, DotStale);
+        using var bgBrush = new SolidBrush(bg);
+        g.FillRectangle(bgBrush, 0, 0, _safetyBanner.Width, _safetyBanner.Height);
+
+        using var font = new Font("Segoe UI", 9f, FontStyle.Bold, GraphicsUnit.Pixel);
+        using var textBrush = new SolidBrush(_isSafe ? DotFresh : DotStale);
+        var text = _isSafe ? "SICURO" : $"NON SICURO - {_safetyText}";
+        g.DrawString(text, font, textBrush, 14, 6);
+    }
+
     private static System.Drawing.Drawing2D.GraphicsPath RoundedRect(RectangleF r, float radius)
     {
         var path = new System.Drawing.Drawing2D.GraphicsPath();
@@ -178,6 +201,10 @@ public sealed class StatusForm : Form
 
     private void RefreshFromState()
     {
+        _isSafe = _safety.IsSafe;
+        _safetyText = string.Join(", ", _safety.UnsafeReasons);
+        _safetyBanner.Invalidate();
+
         var snapshot = _state.TryGetLatest();
         if (snapshot is null)
         {
