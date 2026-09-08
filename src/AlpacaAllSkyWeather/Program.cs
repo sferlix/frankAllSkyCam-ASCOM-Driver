@@ -1,4 +1,5 @@
 using AlpacaAllSkyWeather.Alpaca;
+using AlpacaAllSkyWeather.TrayHost;
 using AlpacaAllSkyWeather.Weather;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,7 @@ builder.Services.AddSingleton<WeatherState>();
 builder.Services.AddSingleton<ObservingConditionsDevice>();
 builder.Services.AddSingleton<SafetyMonitorDevice>();
 builder.Services.AddSingleton<TelegramNotifier>();
+builder.Services.AddSingleton<StatusImageRenderer>();
 builder.Services.AddSingleton(sp =>
     new ObservingConditionsDeviceName(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<WeatherPollerOptions>>().Value.DeviceName));
 builder.Services.AddSingleton(sp =>
@@ -28,6 +30,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddHttpClient();
 builder.Services.AddHostedService<WeatherPollerService>();
 builder.Services.AddHostedService<SafetyAlertService>();
+builder.Services.AddHostedService<TelegramCommandListener>();
 
 var httpPort = builder.Configuration.GetValue(
     $"{WeatherPollerOptions.SectionName}:{nameof(WeatherPollerOptions.HttpPort)}", 51111);

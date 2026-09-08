@@ -14,6 +14,7 @@ public sealed class TrayApplicationContext : ApplicationContext
     private readonly NotifyIcon _notifyIcon;
     private readonly Icon _icon;
     private readonly System.Windows.Forms.Timer _tooltipTimer;
+    private readonly Control _uiThreadMarshal;
     private bool _running = true;
     private StatusForm? _statusForm;
 
@@ -25,6 +26,10 @@ public sealed class TrayApplicationContext : ApplicationContext
         _notifier = app.Services.GetRequiredService<TelegramNotifier>();
         _appSettingsPath = Path.Combine(app.Environment.ContentRootPath, "appsettings.json");
         _icon = TrayIconFactory.CreateIcon();
+
+        _uiThreadMarshal = new Control();
+        _uiThreadMarshal.CreateControl();
+        app.Services.GetRequiredService<StatusImageRenderer>().Render = RenderStatusImageAsync;
 
         var menu = new ContextMenuStrip();
 
@@ -81,6 +86,7 @@ public sealed class TrayApplicationContext : ApplicationContext
             _notifyIcon.Visible = false;
             _statusForm?.Close();
             _icon.Dispose();
+            _uiThreadMarshal.Dispose();
             await _app.StopAsync();
         };
     }
@@ -113,6 +119,40 @@ public sealed class TrayApplicationContext : ApplicationContext
         var current = _app.Services.GetRequiredService<IOptionsMonitor<SafetyRulesOptions>>().CurrentValue;
         using var form = new SafetyRulesSettingsForm(current, _appSettingsPath);
         form.ShowDialog();
+    }
+
+    /// <summary>Renders an off-screen copy of <see cref="StatusForm"/> (positioned far outside the
+    /// virtual screen so it never becomes visible) to a PNG, for the Telegram "now" command. Must
+    /// marshal onto the UI thread since WinForms controls can only be touched from the thread that
+    /// created them; this method itself runs on a hosted-service thread-pool thread.</summary>
+    private Task<byte[]?> RenderStatusImageAsync(CancellationToken cancellationToken)
+    {
+        var tcs = new TaskCompletionSource<byte[]?>();
+        _uiThreadMarshal.BeginInvoke(new Action(() =>
+        {
+            try
+            {
+                using var form = new StatusForm(_state, _safety, positionNearTray: false)
+                {
+                    StartPosition = FormStartPosition.Manual,
+                    Location = new Point(-32000, -32000),
+                    ShowInTaskbar = false,
+                };
+                form.Show();
+                using var bmp = new Bitmap(form.Width, form.Height);
+                form.DrawToBitmap(bmp, new Rectangle(Point.Empty, form.Size));
+                form.Close();
+
+                using var stream = new MemoryStream();
+                bmp.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                tcs.TrySetResult(stream.ToArray());
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+        }));
+        return tcs.Task;
     }
 
     private void UpdateTooltip(int httpPort)

@@ -73,4 +73,33 @@ public class TelegramNotifierTests
         Assert.False(result.Success);
         Assert.Null(handler.LastRequest);
     }
+
+    [Fact]
+    public async Task SendPhotoAsync_posts_a_multipart_request_with_chat_id_and_photo()
+    {
+        var handler = new RecordingHandler(HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler);
+        var png = new byte[] { 1, 2, 3, 4 };
+
+        var result = await TelegramNotifier.SendPhotoAsync(
+            httpClient, "123:ABC", "999", png, "didascalia", NullLogger.Instance, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.NotNull(handler.LastRequest);
+        Assert.Equal("https://api.telegram.org/bot123:ABC/sendPhoto", handler.LastRequest!.RequestUri!.GetLeftPart(UriPartial.Path));
+        Assert.IsType<MultipartFormDataContent>(handler.LastRequest.Content);
+    }
+
+    [Fact]
+    public async Task SendPhotoAsync_fails_without_calling_out_when_token_or_chat_id_is_missing()
+    {
+        var handler = new RecordingHandler(HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramNotifier.SendPhotoAsync(
+            httpClient, "", "999", new byte[] { 1 }, null, NullLogger.Instance, CancellationToken.None);
+
+        Assert.False(result.Success);
+        Assert.Null(handler.LastRequest);
+    }
 }

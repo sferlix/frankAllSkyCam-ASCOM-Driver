@@ -78,10 +78,61 @@ public sealed class TelegramNotifier : IDisposable
         }
     }
 
+    public Task<TelegramSendResult> SendPhotoAsync(string botToken, string chatId, byte[] photoPng, string? caption, CancellationToken cancellationToken = default)
+        => SendPhotoAsync(_httpClient, botToken, chatId, photoPng, caption, _logger, cancellationToken);
+
+    internal static async Task<TelegramSendResult> SendPhotoAsync(
+        HttpClient httpClient,
+        string botToken,
+        string chatId,
+        byte[] photoPng,
+        string? caption,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
+        {
+            return TelegramSendResult.Fail("Token o Chat ID mancanti.");
+        }
+
+        try
+        {
+            var url = $"https://api.telegram.org/bot{botToken}/sendPhoto";
+            using var content = new MultipartFormDataContent
+            {
+                { new StringContent(chatId), "chat_id" },
+            };
+            if (!string.IsNullOrWhiteSpace(caption))
+            {
+                content.Add(new StringContent(caption), "caption");
+            }
+            var photoContent = new ByteArrayContent(photoPng);
+            photoContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+            content.Add(photoContent, "photo", "stato.png");
+
+            var response = await httpClient.PostAsync(url, content, cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return TelegramSendResult.Ok();
+            }
+
+            logger.LogWarning("Telegram API returned {StatusCode} sending a photo: {Body}", response.StatusCode, body);
+            return TelegramSendResult.Fail($"Telegram ha risposto {(int)response.StatusCode} {response.StatusCode}: {body}");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            logger.LogWarning(ex, "Failed to send Telegram photo");
+            return TelegramSendResult.Fail($"Errore di rete: {ex.Message}");
+        }
+    }
+
     /// <summary>Forces IPv4: .NET's Happy Eyeballs can stall for many seconds on networks where
     /// IPv6 has no working route (common on home routers) before falling back to IPv4, even
-    /// though tools like curl fail over almost instantly.</summary>
-    private static SocketsHttpHandler CreateIPv4OnlyHandler() => new()
+    /// though tools like curl fail over almost instantly. Internal (not private) so
+    /// TelegramCommandListener's own long-lived HttpClient can reuse it.</summary>
+    internal static SocketsHttpHandler CreateIPv4OnlyHandler() => new()
     {
         ConnectCallback = async (context, cancellationToken) =>
         {

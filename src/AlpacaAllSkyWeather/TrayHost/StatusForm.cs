@@ -48,7 +48,7 @@ public sealed class StatusForm : Form
     private readonly MetricCard _starCount;
     private readonly NightCard _night;
 
-    public StatusForm(WeatherState state, SafetyMonitorDevice safety)
+    public StatusForm(WeatherState state, SafetyMonitorDevice safety, bool positionNearTray = true)
     {
         _state = state;
         _safety = safety;
@@ -60,7 +60,10 @@ public sealed class StatusForm : Form
         MaximizeBox = false;
         StartPosition = FormStartPosition.Manual;
         Icon = TrayIconFactory.CreateIcon();
-        Load += (_, _) => PositionNearTray();
+        if (positionNearTray)
+        {
+            Load += (_, _) => PositionNearTray();
+        }
 
         _headerPanel = new Panel { Dock = DockStyle.Top, Height = 50, BackColor = Background };
         _headerPanel.Paint += HeaderPanel_Paint;
