@@ -141,8 +141,10 @@ public sealed class TelegramCommandListener : BackgroundService
 
         if (!response.IsSuccessStatusCode)
         {
-            logger.LogWarning("Telegram getUpdates returned {StatusCode}: {Body}", response.StatusCode, body);
-            return offset;
+            // Thrown (not just logged) so the caller's existing catch+backoff kicks in — most
+            // commonly a 409 Conflict from a second machine polling the same bot token, which
+            // would otherwise retry in a tight loop hammering the Telegram API.
+            throw new HttpRequestException($"Telegram getUpdates returned {(int)response.StatusCode} {response.StatusCode}: {body}");
         }
 
         using var doc = JsonDocument.Parse(body);

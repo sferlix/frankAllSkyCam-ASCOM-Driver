@@ -119,6 +119,21 @@ public class TelegramCommandListenerTests
     }
 
     [Fact]
+    public async Task PollOnceAsync_throws_on_a_non_success_response_so_the_caller_can_back_off()
+    {
+        // Most commonly hit as a 409 Conflict when two machines poll the same bot token at once
+        // (see TelegramCommandListenerTests context) — this must NOT be swallowed, or the caller's
+        // loop retries instantly with no delay, hammering the Telegram API.
+        var handler = new RespondingHandler(HttpStatusCode.Conflict, "{\"ok\":false,\"description\":\"Conflict\"}"u8.ToArray());
+        using var httpClient = new HttpClient(handler);
+
+        await Assert.ThrowsAsync<HttpRequestException>(() => TelegramCommandListener.PollOnceAsync(
+            httpClient, "123:ABC", ExpectedChatId, offset: 1,
+            (_, _) => Task.FromResult(TelegramSendResult.Ok()),
+            NullLogger.Instance, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task DownloadImageAsync_returns_null_without_a_request_when_url_is_blank()
     {
         var handler = new RespondingHandler(HttpStatusCode.OK);
@@ -157,7 +172,7 @@ public class TelegramCommandListenerTests
     [Fact]
     public async Task DownloadImageAsync_returns_null_on_network_exception()
     {
-        var handler = new RespondingHandler(new HttpRequestException("connessione rifiutata"));
+        var handler = new RespondingHandler(new HttpRequestException("connection refused"));
         using var httpClient = new HttpClient(handler);
 
         var result = await TelegramCommandListener.DownloadImageAsync(
