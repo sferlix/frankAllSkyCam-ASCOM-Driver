@@ -29,6 +29,13 @@ app.MapAlpacaCommonEndpoints();
 app.MapObservingConditionsEndpoints();
 app.MapManagementEndpoints();
 
-app.Run();
+await app.StartAsync();
+
+ApplicationConfiguration.Initialize();
+
+using var trayContext = new AlpacaAllSkyWeather.TrayHost.TrayApplicationContext(app, httpPort);
+Application.Run(trayContext);
+
+await app.StopAsync();
 
 public partial class Program { }
