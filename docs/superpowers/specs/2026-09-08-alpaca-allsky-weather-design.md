@@ -56,8 +56,8 @@ as-is; sarà l'utente finale (N.I.N.A./SharpCap) a interpretarlo.
 | `SkyQuality` (mag/arcsec²)| `SkyQuality`      | diretto |
 | `Temperature` (°C)        | `Temperature`     | diretto |
 | `WindDirection` (°)       | `WindDirection`   | diretto |
-| `WindGust` (m/s)          | `WindGust`        | diretto |
-| `WindSpeed` (m/s)         | `WindSpeed`       | diretto |
+| `WindGust` (m/s)          | `WindGust`        | diretto — confermato dall'utente: la sorgente scrive già m/s |
+| `WindSpeed` (m/s)         | `WindSpeed`       | diretto — confermato dall'utente: la sorgente scrive già m/s |
 | `SkyTemperature`          | *(assente)*       | throw `MethodNotImplementedException` |
 | `StarFWHM`                | *(assente)*       | throw `MethodNotImplementedException` |
 | `AveragePeriod`           | *(fisso a 0)*     | nessuna media storica supportata; `set` accetta solo `0`, altrimenti `InvalidValueException` |
@@ -75,18 +75,52 @@ client Alpaca standard li richiede).
 
 Progetto .NET 8, applicazione console con:
 
+0. **Dipendenza NuGet `ASCOM.Common.Components` (v4.0.0)**: libreria ufficiale
+   ASCOM Initiative, multi-target `net8.0`/`net9.0`/`net10.0`, senza alcuna
+   dipendenza dalla piattaforma COM ASCOM. Verificata per ispezione diretta
+   dell'assembly (`ASCOM.Common.dll`). Fornisce già, pronti all'uso:
+   - `ASCOM.Common.Alpaca.AlpacaErrors` (enum con i codici di errore Alpaca
+     corretti: `NotImplemented = 0x400`, `InvalidValue = 0x401`,
+     `ValueNotSet = 0x402`, `NotConnected = 0x407`, ecc.)
+   - Le classi busta-risposta `DoubleResponse`, `StringResponse`,
+     `BoolResponse`, `MethodResponse`, `ErrorResponse` (tutte derivano da
+     `Response`, che espone `ClientTransactionID`, `ServerTransactionID`,
+     `ErrorNumber`, `ErrorMessage` — esattamente la busta JSON richiesta dal
+     protocollo Alpaca, verificato che serializzano in PascalCase senza
+     `JsonPropertyName` custom)
+   - `ASCOM.Common.DeviceInterfaces.IObservingConditions` come riferimento
+     per i nomi esatti delle proprietà/metodi da implementare
+
+   Non si usa `ASCOM.Alpaca.Device` (contiene solo il responder di discovery
+   UDP, non necessario) né il template `ASCOM.Alpaca.Templates` (in stato
+   alpha, basato su Blazor, sovradimensionato per un device di sola
+   lettura).
+
 1. **`WeatherPollerService`** (`BackgroundService`): ogni 60s (configurabile)
    esegue `HttpClient.GetAsync` sull'URL sorgente, deserializza con
    `System.Text.Json`, aggiorna uno stato condiviso (`WeatherState`, oggetto
    thread-safe con `lock` interno) contenente gli ultimi valori e
    `DateTimeOffset LastSuccessfulPollUtc`. In caso di errore di rete/parsing,
    logga e riprova al giro successivo senza aggiornare `LastSuccessfulPollUtc`.
+   La logica di singolo poll è isolata in un metodo testabile
+   (`PollOnceAsync`), separato dal loop temporizzato, così da poterla
+   testare senza attese reali.
 
-2. **`ObservingConditionsDevice`**: implementa l'interfaccia Alpaca
-   `IObservingConditions` leggendo da `WeatherState`. Se
-   `now - LastSuccessfulPollUtc > StalenessThreshold` (default 10 minuti,
-   configurabile), le property lanciano `NotConnectedException` invece di
-   restituire dati vecchi silenziosamente.
+2. **`ObservingConditionsDevice`**: implementa la stessa superficie di
+   `IObservingConditions` leggendo da `WeatherState`.
+   - Se non è mai arrivato **nessun** poll riuscito da quando il driver è
+     partito, le proprietà restituiscono errore Alpaca `ValueNotSet`
+     (`AlpacaErrors.ValueNotSet`) — dato mai disponibile.
+   - Se un poll è arrivato ma è "vecchio" (oltre `StalenessThreshold`,
+     default 10 minuti), il driver **continua a restituire l'ultimo valore
+     noto** (niente eccezione, niente `Connected=false` fittizio): è compito
+     di `TimeSinceLastUpdate(sensorName)` comunicare onestamente quanto è
+     vecchio il dato. Questo evita di dichiarare un device "connesso" ma poi
+     rifiutare ogni lettura, comportamento che i tool di conformità Alpaca
+     (ConformU) segnalerebbero come inconsistente.
+   - `SkyQuality` viene passato as-is anche quando vale `0` (es. lettura
+     diurna) — nessuna interpretazione lato driver, come da conferma
+     dell'utente.
 
 3. **Host ASP.NET Core (Kestrel)**: espone le route REST Alpaca standard
    sotto `/api/v1/observingconditions/0/...` per il device sopra, più i
@@ -102,7 +136,10 @@ Progetto .NET 8, applicazione console con:
 4. **Tray host**: un piccolo `NotifyIcon` (Windows Forms) che avvolge
    l'host ASP.NET Core, con menu Start/Stop/Esci e stato ultimo poll
    visibile nel tooltip. L'app resta in primo piano/tray, non è un servizio
-   Windows.
+   Windows. Per non bloccare il message loop di WinForms, l'avvio è
+   `await host.StartAsync()` seguito da `Application.Run(trayContext)` — 
+   **non** `host.Run()`, che bloccherebbe il thread e impedirebbe alla tray
+   icon di rispondere ai click.
 
 5. **Configurazione** (`appsettings.json`):
    ```json
@@ -111,11 +148,14 @@ Progetto .NET 8, applicazione console con:
        "SourceUrl": "https://www.meteobrallo.com/webcam/allsky/weather.json",
        "PollIntervalSeconds": 60,
        "StalenessThresholdMinutes": 10,
-       "HttpPort": 11111,
+       "HttpPort": 51111,
        "DeviceName": "AllSky Weather"
      }
    }
    ```
+   Porta di default `51111` scelta deliberatamente diversa da `11111`
+   (default storico di ASCOM Remote Server) per evitare conflitti se in
+   futuro sulla stessa macchina girasse anche quello.
 
 ## Struttura progetto
 
@@ -135,7 +175,6 @@ AlpacaAllSkyWeather/
         ObservingConditionsDevice.cs
         AlpacaEndpoints.cs        (mapping delle route Common + device-specific)
         ManagementEndpoints.cs
-        AlpacaErrors.cs           (helper per le risposte di errore Alpaca standard)
       TrayHost/
         TrayApplicationContext.cs
   docs/
@@ -145,12 +184,14 @@ AlpacaAllSkyWeather/
 ## Error handling
 
 - Errori di rete/parsing sul poll: loggati, non propagati al client Alpaca
-  finché non si supera la soglia di staleness.
+  finché lo stato non è "mai arrivato un poll riuscito" (vedi sopra).
+- Dato mai arrivato (nessun poll riuscito dall'avvio): `AlpacaErrors.ValueNotSet`
+  (`0x402`).
 - Richieste Alpaca a `ClientTransactionID`/`ClientID` mancanti o
   malformate: risposta con `ErrorNumber`/`ErrorMessage` secondo lo spec
   Alpaca (HTTP 400).
-- Proprietà non supportate (`SkyTemperature`, `StarFWHM`): `ErrorNumber`
-  Alpaca `0x400` (`MethodNotImplementedException`) come da spec.
+- Proprietà non supportate (`SkyTemperature`, `StarFWHM`): `AlpacaErrors.NotImplemented`
+  (`0x400`).
 
 ## Testing
 
@@ -161,7 +202,7 @@ AlpacaAllSkyWeather/
 3. Validazione con **ConformU** (tool ufficiale ASCOM Conformance Checker)
    contro il device `ObservingConditions` esposto.
 4. Verifica end-to-end collegando N.I.N.A o SharpCap come sorgente
-   Weather/Observing Conditions puntata su `127.0.0.1:11111`.
+   Weather/Observing Conditions puntata su `127.0.0.1:51111`.
 
 ## Fuori scope (YAGNI)
 
