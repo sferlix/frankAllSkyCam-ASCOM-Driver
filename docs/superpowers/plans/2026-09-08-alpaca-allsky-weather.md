@@ -1026,7 +1026,7 @@ public sealed class ObservingConditionsDevice
                "No successful poll of the weather source has completed yet.");
 
     private static AlpacaDeviceException NotImplemented(string sensorName)
-        => new(AlpacaErrors.NotImplemented, $"{sensorName} sensor is not available on this AllSkyCam.");
+        => new(AlpacaErrors.NotImplemented, $"{sensorName} sensor is not available on this frankAllSkyCam.");
 }
 ```
 
