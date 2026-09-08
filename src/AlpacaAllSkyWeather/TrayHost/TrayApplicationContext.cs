@@ -35,6 +35,10 @@ public sealed class TrayApplicationContext : ApplicationContext
         var notificationsItem = new ToolStripMenuItem("Impostazioni notifiche...");
         notificationsItem.Click += (_, _) => ShowNotificationSettings();
         menu.Items.Add(notificationsItem);
+
+        var thresholdsItem = new ToolStripMenuItem("Impostazioni soglie di sicurezza...");
+        thresholdsItem.Click += (_, _) => ShowSafetyRulesSettings();
+        menu.Items.Add(thresholdsItem);
         menu.Items.Add(new ToolStripSeparator());
 
         var toggleItem = new ToolStripMenuItem("Ferma");
@@ -101,6 +105,13 @@ public sealed class TrayApplicationContext : ApplicationContext
     {
         var current = _app.Services.GetRequiredService<IOptionsMonitor<NotificationOptions>>().CurrentValue;
         using var form = new NotificationSettingsForm(current, _notifier, _appSettingsPath);
+        form.ShowDialog();
+    }
+
+    private void ShowSafetyRulesSettings()
+    {
+        var current = _app.Services.GetRequiredService<IOptionsMonitor<SafetyRulesOptions>>().CurrentValue;
+        using var form = new SafetyRulesSettingsForm(current, _appSettingsPath);
         form.ShowDialog();
     }
 

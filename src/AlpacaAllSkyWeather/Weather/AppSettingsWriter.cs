@@ -23,4 +23,17 @@ public static class AppSettingsWriter
 
         File.WriteAllText(appSettingsPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
     }
+
+    public static void UpdateSafetyRules(string appSettingsPath, SafetyRulesOptions options)
+    {
+        var root = File.Exists(appSettingsPath)
+            ? JsonNode.Parse(File.ReadAllText(appSettingsPath))!.AsObject()
+            : new JsonObject();
+
+        // Serialized generically (not field-by-field like UpdateNotificationSettings) so adding
+        // a new ThresholdRule to SafetyRulesOptions doesn't also require updating this method.
+        root[SafetyRulesOptions.SectionName] = JsonSerializer.SerializeToNode(options);
+
+        File.WriteAllText(appSettingsPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
+    }
 }

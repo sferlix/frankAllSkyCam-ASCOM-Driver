@@ -101,4 +101,37 @@ public class AppSettingsWriterTests
             }
         }
     }
+
+    [Fact]
+    public void UpdateSafetyRules_writes_every_rule_and_preserves_other_sections()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"appsettings-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """{ "AllSkyWeather": { "HttpPort": 51111 } }""");
+
+            var options = new SafetyRulesOptions
+            {
+                MaxDataAgeMinutes = 20,
+                CloudCover = new ThresholdRule { Enabled = false, Threshold = 70 },
+                NightWindowEnabled = true,
+            };
+            AppSettingsWriter.UpdateSafetyRules(path, options);
+
+            var root = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
+            var allSkyWeather = root["AllSkyWeather"]!.AsObject();
+            Assert.Equal(51111, allSkyWeather["HttpPort"]!.GetValue<int>());
+
+            var safety = root["SafetyMonitor"]!.AsObject();
+            Assert.Equal(20, safety["MaxDataAgeMinutes"]!.GetValue<double>());
+            Assert.False(safety["CloudCover"]!["Enabled"]!.GetValue<bool>());
+            Assert.Equal(70, safety["CloudCover"]!["Threshold"]!.GetValue<double>());
+            Assert.True(safety["NightWindowEnabled"]!.GetValue<bool>());
+            Assert.True(safety["RainRate"]!["Enabled"]!.GetValue<bool>()); // default from a fresh SafetyRulesOptions
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }
