@@ -23,6 +23,7 @@ var app = builder.Build();
 
 app.MapAlpacaCommonEndpoints();
 app.MapObservingConditionsEndpoints();
+app.MapManagementEndpoints();
 
 app.Run();
 
