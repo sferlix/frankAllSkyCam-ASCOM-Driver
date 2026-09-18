@@ -141,7 +141,11 @@ public sealed class TelegramNotifier : IDisposable
         ConnectCallback = async (context, cancellationToken) =>
         {
             var addresses = await Dns.GetHostAddressesAsync(context.DnsEndPoint.Host, AddressFamily.InterNetwork, cancellationToken);
-            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+            // Socket(SocketType, ProtocolType) (no AddressFamily) creates a dual-mode IPv6
+            // socket, not IPv4 — despite the name of this method, that undoes the "IPv4-only"
+            // intent and can stall connecting to a plain IPv4 address on a machine where IPv6 is
+            // disabled or has no route. AddressFamily.InterNetwork guarantees a real IPv4 socket.
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
                 await socket.ConnectAsync(addresses[0], context.DnsEndPoint.Port, cancellationToken);

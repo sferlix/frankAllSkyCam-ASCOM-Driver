@@ -99,10 +99,11 @@ public sealed class TelegramCommandListener : BackgroundService
     }
 
     /// <summary>Downloads the AllSkyCam's live image so it can be forwarded to Telegram. Never
-    /// throws: a blank URL, a failed request, or a non-success response all come back as a null
-    /// <see cref="ImageDownloadResult.Bytes"/> with a human-readable <see
+    /// throws: a blank URL, a malformed URL, a failed request, or a non-success response all come
+    /// back as a null <see cref="ImageDownloadResult.Bytes"/> with a human-readable <see
     /// cref="ImageDownloadResult.Error"/> — a broken camera feed shouldn't stop the status
-    /// screenshot from being sent, but the reason should still reach the user.</summary>
+    /// screenshot from being sent, but the reason should still reach the user (not just a log
+    /// line, which is unreachable from this tray app) rather than disappearing silently.</summary>
     internal static async Task<ImageDownloadResult> DownloadImageAsync(HttpClient httpClient, string url, ILogger logger, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -110,25 +111,48 @@ public sealed class TelegramCommandListener : BackgroundService
             return new ImageDownloadResult(null, "no AllSkyCam image URL is configured.");
         }
 
+        // Many LAN camera URLs get typed/pasted without a scheme (e.g. "192.168.1.50/image.jpg");
+        // HttpClient throws InvalidOperationException (not caught below) for a relative URI.
+        if (!url.Contains("://", StringComparison.Ordinal))
+        {
+            url = "http://" + url;
+        }
+
         try
         {
-            using var response = await httpClient.GetAsync(url, ct);
+            // The custom IPv4-only ConnectCallback (TelegramNotifier.CreateIPv4OnlyHandler) sets
+            // no connect/read timeout of its own, so a camera that stalls instead of erroring out
+            // could otherwise hang this request forever with no exception and no reply at all.
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(10));
+
+            using var response = await httpClient.GetAsync(url, timeoutCts.Token);
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning("Failed to download the AllSkyCam image: {StatusCode}", response.StatusCode);
                 return new ImageDownloadResult(null, $"the camera responded {(int)response.StatusCode} {response.StatusCode}.");
             }
 
-            var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+            var bytes = await response.Content.ReadAsByteArrayAsync(timeoutCts.Token);
             var (contentType, fileName) = DetectImageFormat(bytes, response.Content.Headers.ContentType?.MediaType);
             return new ImageDownloadResult(bytes, null, contentType, fileName);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        // Broad on purpose: any failure here (bad URI, SSL error, DNS failure, ...) must come
+        // back as a reported reason rather than bubble up and be swallowed by the polling loop's
+        // own catch-all, which only logs — leaving the user with silence and no clue why.
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.LogWarning(ex, "Error while downloading the AllSkyCam image");
-            return new ImageDownloadResult(null, $"network error: {ex.Message}");
+            return new ImageDownloadResult(null, DescribeException(ex));
         }
     }
+
+    private static string DescribeException(Exception ex) => ex switch
+    {
+        HttpRequestException => $"network error: {ex.Message}",
+        TaskCanceledException => "the request timed out.",
+        _ => $"{ex.GetType().Name}: {ex.Message}",
+    };
 
     /// <summary>Picks the (ContentType, FileName) pair to tell Telegram about, since sending a
     /// JPEG declared as "image/png" (or vice versa) makes Telegram's own image processing reject

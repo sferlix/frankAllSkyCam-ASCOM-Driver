@@ -25,12 +25,14 @@ public class TelegramCommandListenerTests
         private readonly HttpStatusCode _statusCode;
         private readonly byte[] _body;
         private readonly Exception? _throw;
+        public Uri? LastRequestUri { get; private set; }
 
         public RespondingHandler(HttpStatusCode statusCode, byte[]? body = null) { _statusCode = statusCode; _body = body ?? Array.Empty<byte>(); }
         public RespondingHandler(Exception toThrow) { _statusCode = HttpStatusCode.OK; _body = Array.Empty<byte>(); _throw = toThrow; }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            LastRequestUri = request.RequestUri;
             if (_throw is not null)
             {
                 throw _throw;
@@ -183,6 +185,39 @@ public class TelegramCommandListenerTests
 
         Assert.Null(result.Bytes);
         Assert.Contains("connection refused", result.Error);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_adds_a_scheme_when_the_url_has_none()
+    {
+        // A bare "host/path" (no "http://") makes HttpClient throw InvalidOperationException,
+        // which the old catch clause (HttpRequestException/TaskCanceledException only) didn't
+        // catch — the request must be prepended with a scheme before it ever reaches HttpClient.
+        var handler = new RespondingHandler(HttpStatusCode.OK, new byte[] { 1, 2, 3 });
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "192.168.2.50/image.jpg", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Null(result.Error);
+        Assert.NotNull(result.Bytes);
+        Assert.Equal("http://192.168.2.50/image.jpg", handler.LastRequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_reports_an_unexpected_exception_instead_of_letting_it_propagate()
+    {
+        // Any exception type HttpClient might throw (not just HttpRequestException/
+        // TaskCanceledException) must come back as a reported error, never bubble up and get
+        // silently swallowed by the caller's own catch-all.
+        var handler = new RespondingHandler(new InvalidOperationException("boom"));
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "http://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Null(result.Bytes);
+        Assert.Contains("boom", result.Error);
     }
 
     [Fact]
