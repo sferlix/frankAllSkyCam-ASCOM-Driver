@@ -20,6 +20,7 @@ public sealed class NotificationSettingsForm : Form
     private readonly TextBox _botTokenTextBox;
     private readonly TextBox _chatIdTextBox;
     private readonly TextBox _allSkyCamUrlTextBox;
+    private readonly CheckBox _notifyOnlyAtNightCheckBox;
     private readonly Label _statusLabel;
 
     public NotificationSettingsForm(NotificationOptions current, TelegramNotifier notifier, string appSettingsPath)
@@ -31,7 +32,7 @@ public sealed class NotificationSettingsForm : Form
         BackColor = Background;
         ForeColor = TextPrimary;
         Font = new Font("Segoe UI", 9.5f, FontStyle.Regular, GraphicsUnit.Point);
-        ClientSize = new Size(380, 380);
+        ClientSize = new Size(380, 412);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
@@ -89,13 +90,22 @@ public sealed class NotificationSettingsForm : Form
             Size = new Size(340, 24),
         };
 
+        _notifyOnlyAtNightCheckBox = new CheckBox
+        {
+            Text = "Only send notifications at night",
+            ForeColor = TextPrimary,
+            AutoSize = true,
+            Location = new Point(20, 252),
+            Checked = current.NotifyOnlyAtNight,
+        };
+
         var testButton = new Button
         {
             Text = "Send a test message",
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = AccentWind,
-            Location = new Point(20, 252),
+            Location = new Point(20, 284),
             Size = new Size(180, 28),
         };
         testButton.FlatAppearance.BorderColor = AccentWind;
@@ -106,7 +116,7 @@ public sealed class NotificationSettingsForm : Form
             ForeColor = TextMuted,
             AutoSize = false,
             Size = new Size(340, 76),
-            Location = new Point(20, 288),
+            Location = new Point(20, 320),
         };
 
         var saveButton = new Button
@@ -116,7 +126,7 @@ public sealed class NotificationSettingsForm : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = TextPrimary,
-            Location = new Point(184, 252),
+            Location = new Point(184, 284),
             Size = new Size(80, 28),
         };
         saveButton.Click += (_, _) => Save();
@@ -128,7 +138,7 @@ public sealed class NotificationSettingsForm : Form
             FlatStyle = FlatStyle.Flat,
             BackColor = FieldBackground,
             ForeColor = TextMuted,
-            Location = new Point(280, 252),
+            Location = new Point(280, 284),
             Size = new Size(80, 28),
         };
 
@@ -140,6 +150,7 @@ public sealed class NotificationSettingsForm : Form
         Controls.Add(_chatIdTextBox);
         Controls.Add(allSkyCamUrlLabel);
         Controls.Add(_allSkyCamUrlTextBox);
+        Controls.Add(_notifyOnlyAtNightCheckBox);
         Controls.Add(testButton);
         Controls.Add(_statusLabel);
         Controls.Add(saveButton);
@@ -167,6 +178,7 @@ public sealed class NotificationSettingsForm : Form
             TelegramBotToken = _botTokenTextBox.Text.Trim(),
             TelegramChatId = _chatIdTextBox.Text.Trim(),
             AllSkyCamImageUrl = _allSkyCamUrlTextBox.Text.Trim(),
+            NotifyOnlyAtNight = _notifyOnlyAtNightCheckBox.Checked,
         };
         AppSettingsWriter.UpdateNotificationSettings(_appSettingsPath, options);
     }

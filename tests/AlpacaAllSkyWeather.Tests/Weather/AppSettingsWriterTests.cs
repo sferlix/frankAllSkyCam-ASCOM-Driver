@@ -19,6 +19,7 @@ public class AppSettingsWriterTests
                 TelegramBotToken = "123:ABC",
                 TelegramChatId = "999",
                 AllSkyCamImageUrl = "https://example.com/allsky.jpg",
+                NotifyOnlyAtNight = true,
             });
 
             var root = JsonNode.Parse(File.ReadAllText(path))!.AsObject();
@@ -27,6 +28,7 @@ public class AppSettingsWriterTests
             Assert.Equal("123:ABC", notifications["TelegramBotToken"]!.GetValue<string>());
             Assert.Equal("999", notifications["TelegramChatId"]!.GetValue<string>());
             Assert.Equal("https://example.com/allsky.jpg", notifications["AllSkyCamImageUrl"]!.GetValue<string>());
+            Assert.True(notifications["NotifyOnlyAtNight"]!.GetValue<bool>());
         }
         finally
         {

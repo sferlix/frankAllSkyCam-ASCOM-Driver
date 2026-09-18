@@ -134,14 +134,15 @@ public class TelegramCommandListenerTests
     }
 
     [Fact]
-    public async Task DownloadImageAsync_returns_null_without_a_request_when_url_is_blank()
+    public async Task DownloadImageAsync_returns_null_bytes_with_a_reason_when_url_is_blank()
     {
         var handler = new RespondingHandler(HttpStatusCode.OK);
         using var httpClient = new HttpClient(handler);
 
         var result = await TelegramCommandListener.DownloadImageAsync(httpClient, "", NullLogger.Instance, CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.Null(result.Bytes);
+        Assert.NotNull(result.Error);
     }
 
     [Fact]
@@ -154,11 +155,12 @@ public class TelegramCommandListenerTests
         var result = await TelegramCommandListener.DownloadImageAsync(
             httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
 
-        Assert.Equal(bytes, result);
+        Assert.Equal(bytes, result.Bytes);
+        Assert.Null(result.Error);
     }
 
     [Fact]
-    public async Task DownloadImageAsync_returns_null_on_http_error()
+    public async Task DownloadImageAsync_returns_null_bytes_with_the_status_code_on_http_error()
     {
         var handler = new RespondingHandler(HttpStatusCode.NotFound);
         using var httpClient = new HttpClient(handler);
@@ -166,11 +168,12 @@ public class TelegramCommandListenerTests
         var result = await TelegramCommandListener.DownloadImageAsync(
             httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.Null(result.Bytes);
+        Assert.Contains("404", result.Error);
     }
 
     [Fact]
-    public async Task DownloadImageAsync_returns_null_on_network_exception()
+    public async Task DownloadImageAsync_returns_null_bytes_with_the_exception_message_on_network_exception()
     {
         var handler = new RespondingHandler(new HttpRequestException("connection refused"));
         using var httpClient = new HttpClient(handler);
@@ -178,6 +181,54 @@ public class TelegramCommandListenerTests
         var result = await TelegramCommandListener.DownloadImageAsync(
             httpClient, "https://example.com/allsky.jpg", NullLogger.Instance, CancellationToken.None);
 
-        Assert.Null(result);
+        Assert.Null(result.Bytes);
+        Assert.Contains("connection refused", result.Error);
+    }
+
+    [Fact]
+    public async Task DownloadImageAsync_detects_jpeg_from_magic_bytes_even_when_undeclared()
+    {
+        // Bare ByteArrayContent (as used below) sends no Content-Type header, mirroring the many
+        // embedded camera HTTP servers that omit or mislabel it (e.g. as application/octet-stream).
+        var jpegBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0, 0, 0 };
+        var handler = new RespondingHandler(HttpStatusCode.OK, jpegBytes);
+        using var httpClient = new HttpClient(handler);
+
+        var result = await TelegramCommandListener.DownloadImageAsync(
+            httpClient, "https://example.com/allsky", NullLogger.Instance, CancellationToken.None);
+
+        Assert.Equal("image/jpeg", result.ContentType);
+        Assert.EndsWith(".jpg", result.FileName);
+    }
+
+    [Theory]
+    [InlineData("image/jpeg", "image/jpeg", ".jpg")]
+    [InlineData("image/png", "image/png", ".png")]
+    public void DetectImageFormat_trusts_a_declared_image_content_type(string declared, string expectedContentType, string expectedExtension)
+    {
+        var (contentType, fileName) = TelegramCommandListener.DetectImageFormat(Array.Empty<byte>(), declared);
+
+        Assert.Equal(expectedContentType, contentType);
+        Assert.EndsWith(expectedExtension, fileName);
+    }
+
+    [Fact]
+    public void DetectImageFormat_sniffs_png_magic_bytes_when_the_declared_type_is_not_an_image_type()
+    {
+        var pngBytes = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+
+        var (contentType, fileName) = TelegramCommandListener.DetectImageFormat(pngBytes, "application/octet-stream");
+
+        Assert.Equal("image/png", contentType);
+        Assert.EndsWith(".png", fileName);
+    }
+
+    [Fact]
+    public void DetectImageFormat_falls_back_to_jpeg_when_the_format_cannot_be_determined()
+    {
+        var (contentType, fileName) = TelegramCommandListener.DetectImageFormat(new byte[] { 1, 2, 3 }, null);
+
+        Assert.Equal("image/jpeg", contentType);
+        Assert.EndsWith(".jpg", fileName);
     }
 }

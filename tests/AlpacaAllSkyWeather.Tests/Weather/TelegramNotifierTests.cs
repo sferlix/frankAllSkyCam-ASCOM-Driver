@@ -91,6 +91,22 @@ public class TelegramNotifierTests
     }
 
     [Fact]
+    public async Task SendPhotoAsync_uses_the_given_content_type_and_file_name()
+    {
+        var handler = new RecordingHandler(HttpStatusCode.OK);
+        using var httpClient = new HttpClient(handler);
+        var jpeg = new byte[] { 0xFF, 0xD8, 0xFF };
+
+        await TelegramNotifier.SendPhotoAsync(
+            httpClient, "123:ABC", "999", jpeg, caption: null, NullLogger.Instance, CancellationToken.None,
+            contentType: "image/jpeg", fileName: "allskycam.jpg");
+
+        Assert.IsType<MultipartFormDataContent>(handler.LastRequest!.Content);
+        Assert.Contains("filename=allskycam.jpg", handler.LastRequestBody);
+        Assert.Contains("Content-Type: image/jpeg", handler.LastRequestBody);
+    }
+
+    [Fact]
     public async Task SendPhotoAsync_fails_without_calling_out_when_token_or_chat_id_is_missing()
     {
         var handler = new RecordingHandler(HttpStatusCode.OK);

@@ -78,17 +78,21 @@ public sealed class TelegramNotifier : IDisposable
         }
     }
 
-    public Task<TelegramSendResult> SendPhotoAsync(string botToken, string chatId, byte[] photoPng, string? caption, CancellationToken cancellationToken = default)
-        => SendPhotoAsync(_httpClient, botToken, chatId, photoPng, caption, _logger, cancellationToken);
+    public Task<TelegramSendResult> SendPhotoAsync(
+        string botToken, string chatId, byte[] photo, string? caption, CancellationToken cancellationToken = default,
+        string contentType = "image/png", string fileName = "stato.png")
+        => SendPhotoAsync(_httpClient, botToken, chatId, photo, caption, _logger, cancellationToken, contentType, fileName);
 
     internal static async Task<TelegramSendResult> SendPhotoAsync(
         HttpClient httpClient,
         string botToken,
         string chatId,
-        byte[] photoPng,
+        byte[] photo,
         string? caption,
         ILogger logger,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string contentType = "image/png",
+        string fileName = "stato.png")
     {
         if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
         {
@@ -106,9 +110,9 @@ public sealed class TelegramNotifier : IDisposable
             {
                 content.Add(new StringContent(caption), "caption");
             }
-            var photoContent = new ByteArrayContent(photoPng);
-            photoContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
-            content.Add(photoContent, "photo", "stato.png");
+            var photoContent = new ByteArrayContent(photo);
+            photoContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            content.Add(photoContent, "photo", fileName);
 
             var response = await httpClient.PostAsync(url, content, cancellationToken);
             var body = await response.Content.ReadAsStringAsync(cancellationToken);

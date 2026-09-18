@@ -20,6 +20,7 @@ public static class AppSettingsWriter
             ["TelegramBotToken"] = options.TelegramBotToken,
             ["TelegramChatId"] = options.TelegramChatId,
             ["AllSkyCamImageUrl"] = options.AllSkyCamImageUrl,
+            ["NotifyOnlyAtNight"] = options.NotifyOnlyAtNight,
         };
 
         File.WriteAllText(appSettingsPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));

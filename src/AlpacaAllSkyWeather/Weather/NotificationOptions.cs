@@ -15,4 +15,11 @@ public sealed class NotificationOptions
     /// <summary>HTTP(S) address of the AllSkyCam's live image. When set, TelegramCommandListener
     /// sends a copy of it (in addition to the status screenshot) on "now"/"status".</summary>
     public string AllSkyCamImageUrl { get; set; } = "";
+
+    /// <summary>When true, SafetyAlertService only sends safe/unsafe transition alerts while
+    /// inside the current night window (see <see cref="WeatherSnapshot.NightStart"/>/<see
+    /// cref="WeatherSnapshot.NightEnd"/>); daytime transitions are skipped. Does not affect the
+    /// "now"/"status" command reply, which is user-initiated and always answered. Default false
+    /// (always notify) preserves existing behavior.</summary>
+    public bool NotifyOnlyAtNight { get; set; } = false;
 }
