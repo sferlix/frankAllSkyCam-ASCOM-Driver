@@ -12,7 +12,7 @@ It polls a camera's `weather.json` endpoint and re-publishes it as two standard 
 - **SafetyMonitor device**: reports `IsSafe` based on independently configurable per-quantity thresholds (cloud cover, rain, wind gust/speed, sky brightness, humidity, dew point, sky quality, minimum temperature, minimum pressure, minimum star count, and "outside the astronomical night window").
 - **Tray application**: a dark-themed status window showing every live reading with hand-drawn icons (including a cloud-cover icon that switches between overcast / partly cloudy / clear-day / clear-night to match the actual reading), plus dialogs to edit notification and safety-threshold settings without touching JSON by hand.
 - **Telegram notifications**: an alert is sent when conditions transition safe → unsafe (and back) — optionally restricted to the astronomical night window — and texting `now` or `status` to the bot replies with a screenshot of the live status window plus (optionally) a copy of the camera's live image.
-- **Windows installer**: a per-user Inno Setup installer (no admin rights required) with an optional "launch at Windows startup" task, built for machines without .NET installed (self-contained).
+- **Windows installer**: a per-user Inno Setup installer (no admin rights required) with optional "launch at Windows startup" and "auto-restart if unresponsive" (watchdog) tasks, built for machines without .NET installed (self-contained).
 
 ## Requirements
 
@@ -48,6 +48,12 @@ Threshold and notification settings are picked up live (no restart needed) after
 If you run the driver on more than one machine, use a **separate bot per machine** — Telegram allows only one active listener per bot token, so sharing one across machines means only one of them will ever receive the `now` command.
 
 Check "Only send notifications at night" in the same dialog to suppress safe/unsafe alerts during the day (based on the camera's own sunrise/sunset times) — daytime cloud cover or wind changes stop triggering a message, while `now`/`status` still replies at any time.
+
+### Watchdog (auto-restart if unresponsive)
+
+Enabling "Automatically restart frankAllSkyCam ASCOM Driver if it becomes unresponsive" during install registers a per-user Scheduled Task (no admin rights needed) that runs `Watchdog.ps1` every 5 minutes. It pings the app's own local Alpaca endpoint (`http://127.0.0.1:<port>/management/apiversions`); if that doesn't respond, it kills and relaunches `AlpacaAllSkyWeather.exe`, and logs the event to `watchdog.log` next to the executable.
+
+It does **not** distinguish a crash/hang from you deliberately choosing "Exit" from the tray menu — either way, the app comes back on the next check. To leave it stopped on purpose (e.g. during a manual upgrade), disable the Scheduled Task first (Task Scheduler → "frankAllSkyCam ASCOM Driver Watchdog"), or uncheck the task when reinstalling.
 
 ## Building from source
 

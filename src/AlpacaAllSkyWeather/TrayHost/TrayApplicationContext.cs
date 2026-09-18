@@ -49,17 +49,30 @@ public sealed class TrayApplicationContext : ApplicationContext
         var toggleItem = new ToolStripMenuItem("Stop");
         toggleItem.Click += async (_, _) =>
         {
-            if (_running)
+            try
             {
-                await _app.StopAsync();
-                toggleItem.Text = "Start";
+                if (_running)
+                {
+                    await _app.StopAsync();
+                    toggleItem.Text = "Start";
+                }
+                else
+                {
+                    await _app.StartAsync();
+                    toggleItem.Text = "Stop";
+                }
+                _running = !_running;
             }
-            else
+            catch (Exception ex)
             {
-                await _app.StartAsync();
-                toggleItem.Text = "Stop";
+                // WebApplication/IHost can't be restarted once stopped: its internal shutdown
+                // token is permanently cancelled, so StartAsync always throws
+                // OperationCanceledException here. Left uncaught, this crashes the whole tray
+                // app (no unhandled-exception handler is installed anywhere else).
+                MessageBox.Show(
+                    $"Could not restart the internal server: {ex.Message}\n\nUse \"Exit\" from this menu and relaunch the app instead.",
+                    "AllSky Weather", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            _running = !_running;
         };
         var exitItem = new ToolStripMenuItem("Exit");
         exitItem.Click += (_, _) => ExitThread();
